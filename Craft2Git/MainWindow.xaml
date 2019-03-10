@@ -1,0 +1,117 @@
+﻿<Window x:Class="Craft2Git.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:Craft2Git"
+        mc:Ignorable="d"
+        Title="MainWindow" Height="500" Width="800" MinWidth="800" MinHeight="450">
+    <Window.Resources>
+        <DataTemplate x:Key="addonEntry" >
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition />
+                    <ColumnDefinition />
+                </Grid.ColumnDefinitions>
+                <Image Source="{Binding Path=iconSource}" Grid.Column="0" Height="50" Margin="1.5"/>
+                <TextBlock Text="{Binding Path=header.name}" Grid.Column="2"  VerticalAlignment="Top" Margin="10,10,0,0" FontSize="15"/>
+                <TextBlock Text="{Binding Path=header.description}" Grid.Column="2" VerticalAlignment="Top" Margin="10,25,0,0"/>
+            </Grid>
+
+            <!--<StackPanel.Resources>
+                    <Style TargetType="TextBlock">
+                        <Setter Property="Margin" Value="20"/>
+                    </Style>
+                    <Style TargetType="Image">
+                        <Setter Property="Height" Value="50"/>
+                    </Style>
+                </StackPanel.Resources>
+                -->
+
+        </DataTemplate>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="65*"></ColumnDefinition>
+            <ColumnDefinition Width="2*"/>
+            <ColumnDefinition Width="65*"></ColumnDefinition>
+        </Grid.ColumnDefinitions>
+        <Button x:Name="rightCopy" Content="Copy" Grid.Column="2" Margin="43,0,0,77" HorizontalAlignment="Left" VerticalAlignment="Bottom" Width="75" Click="RightCopy"/>
+        <TextBox x:Name="leftText" Height="23" Margin="10,0,90,15" Text="TextBox" TextChanged="LeftText_TextChanged" VerticalAlignment="Bottom"/>
+        <Button x:Name="leftCopy" Content="Copy" Grid.Column="0" Margin="10,0,0,77" HorizontalAlignment="Left" VerticalAlignment="Bottom" Width="75" Click="LeftCopy"/>
+        <TabControl x:Name="leftTabControl" Margin="10,27,43,110" SelectionChanged="LeftTabChanged" >
+
+            <TabItem x:Name="leftBehaviorTab" Header="Behavior">
+                <Grid Background="#FFE5E5E5"/>
+            </TabItem>
+            <TabItem x:Name="leftResourceTab" Header="Resource" Height="23" VerticalAlignment="Top">
+                <Grid Background="#FFE5E5E5">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="224*"/>
+                        <ColumnDefinition Width="65*"/>
+                    </Grid.ColumnDefinitions>
+                </Grid>
+            </TabItem>
+            <TabItem x:Name="leftWorldTab" Header="Worlds">
+                <Grid Background="#FFE5E5E5"/>
+            </TabItem>
+            <TabItem x:Name="leftUncatTab" Header="Uncategorized">
+                <Grid Background="#FFE5E5E5">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="173*"/>
+                        <ColumnDefinition Width="79*"/>
+                        <ColumnDefinition Width="37*"/>
+                    </Grid.ColumnDefinitions>
+                </Grid>
+            </TabItem>
+
+        </TabControl>
+        <ListBox x:Name="leftList" Margin="22,59,54,120" ItemsSource="{Binding}" ItemTemplate="{DynamicResource ResourceKey=addonEntry}"/>
+        <TextBox x:Name="rightText" Height="23" Margin="10,0,90,15" Text="TextBox" TextChanged="RightText_TextChanged" Grid.Column="2" VerticalAlignment="Bottom"/>
+        <TabControl x:Name="rightTabControl" Margin="43,27,10,110" SelectionChanged="RightTabChanged" Grid.Column="2" >
+
+            <TabItem x:Name="rightBehaviorTab" Header="Behavior">
+                <Grid Background="#FFE5E5E5" Margin="0,-1,0,1"/>
+            </TabItem>
+            <TabItem x:Name="rightResourceTab" Header="Resource" Height="23" VerticalAlignment="Top">
+                <Grid Background="#FFE5E5E5">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="224*"/>
+                        <ColumnDefinition Width="65*"/>
+                    </Grid.ColumnDefinitions>
+                </Grid>
+            </TabItem>
+            <TabItem x:Name="rightWorldTab" Header="Worlds">
+                <Grid Background="#FFE5E5E5"/>
+            </TabItem>
+            <TabItem x:Name="rightUncatTab" Header="Uncategorized">
+                <Grid Background="#FFE5E5E5">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="173*"/>
+                        <ColumnDefinition Width="79*"/>
+                        <ColumnDefinition Width="37*"/>
+                    </Grid.ColumnDefinitions>
+                </Grid>
+            </TabItem>
+
+        </TabControl>
+        <ListBox x:Name="rightList" Margin="54,59,22,120" ItemsSource="{Binding}" ItemTemplate="{DynamicResource ResourceKey=addonEntry}" Grid.Column="2"/>
+        <Grid VerticalAlignment="Stretch"  Background="#FFE5E5E5" Grid.Column="1" HorizontalAlignment="Left" Width="12"/>
+        <Button x:Name="leftOpen" Content="Browse" HorizontalAlignment="Right" Margin="0,0,10,15" VerticalAlignment="Bottom" Width="75" Click="LeftOpenDialog"/>
+        <Button x:Name="rightOpen" Content="Browse" HorizontalAlignment="Right" Margin="0,0,10,15" VerticalAlignment="Bottom" Width="75" Click="RightOpenDialog" Grid.Column="2"/>
+        <Button Content="Refresh" HorizontalAlignment="Left" Margin="90,0,0,77" VerticalAlignment="Bottom" Width="75" Click="LeftRefreshClick"/>
+        <Button Content="Refresh" HorizontalAlignment="Left" Margin="123,0,0,77" VerticalAlignment="Bottom" Width="75" Click="RightRefreshClick" Grid.Column="2"/>
+        <Button Content="Delete" HorizontalAlignment="Left" Margin="170,0,0,77" VerticalAlignment="Bottom" Width="75" Click="LeftDeleteClick"/>
+        <Button Content="Delete" HorizontalAlignment="Left" Margin="203,0,0,77" VerticalAlignment="Bottom" Width="75" Click="RightDeleteClick" Grid.Column="2"/>
+        <Menu Height="22" VerticalAlignment="Top" Grid.ColumnSpan="3">
+            <MenuItem Header="File">
+                <MenuItem Header="There's Nothing Here Yet"/>
+            </MenuItem>
+            <MenuItem Header="Preferences">
+                <MenuItem Header="Set Left Path As Default" Click="SetLeftDefault"/>
+                <MenuItem Header="Set Right Path As Default" Click="SetRightDefault"/>
+            </MenuItem>
+        </Menu>
+    </Grid>
+</Window>
