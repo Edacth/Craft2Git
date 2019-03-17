@@ -187,7 +187,7 @@ namespace Craft2Git
             #endregion
 
             leftText.Text = leftFilePath;
-            rightText.Text = rightFilePath;
+            rightText.Text = rightFilePath; 
         }
 
         private void LeftCopy(object sender, RoutedEventArgs e)
@@ -306,7 +306,7 @@ namespace Craft2Git
                 }
             }
             catch (Exception)
-           {
+            {
             }
             
             #endregion
@@ -437,8 +437,20 @@ namespace Craft2Git
 
                 
             }
-            
+
             #endregion
+            if (leftList != null)
+            {
+                if (leftListGroup[leftTabSelected].Count > 0)
+                {
+                    leftList.SelectedIndex = 0;
+                }
+                else
+                {
+                    leftList.SelectedIndex = -1;
+                }
+            }
+            
         }
 
         private void LoadRightPacks(string filePath)
@@ -872,7 +884,7 @@ namespace Craft2Git
             if (leftList.SelectedIndex > -1)
             {
                 string filePath = System.IO.Path.GetDirectoryName(leftListGroup[leftTabSelected][leftList.SelectedIndex].filePath);
-                int storedIndex = rightList.SelectedIndex;
+                int storedIndex = leftList.SelectedIndex;
 
                 DirectoryInfo dir = new DirectoryInfo(filePath);
                 if (!dir.Exists)
@@ -885,10 +897,16 @@ namespace Craft2Git
 
                 if (dir.Exists)
                 {
-                    leftWatcher.EnableRaisingEvents = false;
-                    Directory.Delete(filePath, true);
-                    leftWatcher.EnableRaisingEvents = true;
-                    LoadLeftPacks(leftFilePath);
+                    MessageBoxResult messageBoxResult = System.Windows.MessageBox.Show("Are you sure?", "Delete Confirmation", System.Windows.MessageBoxButton.YesNo);
+                    if (messageBoxResult == MessageBoxResult.Yes)
+                    {
+                        leftWatcher.EnableRaisingEvents = false;
+                        Directory.Delete(filePath, true);  
+                        LoadLeftPacks(leftFilePath);
+                        leftWatcher.EnableRaisingEvents = true;
+                    }
+
+                    
                 }
                 if (leftListGroup[leftTabSelected].Count() - 1 >= storedIndex)
                 {
@@ -920,10 +938,14 @@ namespace Craft2Git
 
                 if (dir.Exists)
                 {
-                    rightWatcher.EnableRaisingEvents = false;
-                    Directory.Delete(filePath, true);
-                    rightWatcher.EnableRaisingEvents = true;
-                    LoadRightPacks(rightFilePath);
+                    MessageBoxResult messageBoxResult = System.Windows.MessageBox.Show("Are you sure?", "Delete Confirmation", System.Windows.MessageBoxButton.YesNo);
+                    if (messageBoxResult == MessageBoxResult.Yes)
+                    {
+                        rightWatcher.EnableRaisingEvents = false;
+                        Directory.Delete(filePath, true);
+                        LoadRightPacks(rightFilePath);
+                        rightWatcher.EnableRaisingEvents = true;
+                    }
                 }
 
                 if (rightListGroup[rightTabSelected].Count() - 1 >= storedIndex)
