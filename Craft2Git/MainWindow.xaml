@@ -93,22 +93,24 @@
         <Button x:Name="leftOpen" Content="Browse" HorizontalAlignment="Right" Margin="0,0,10,15" VerticalAlignment="Bottom" Width="75" Click="LeftOpenDialog"/>
         <Button x:Name="rightOpen" Content="Browse" HorizontalAlignment="Right" Margin="0,0,10,15" VerticalAlignment="Bottom" Width="75" Click="RightOpenDialog" Grid.Column="2"/>
         <Button Content="Refresh" HorizontalAlignment="Left" Margin="90,0,0,77" VerticalAlignment="Bottom" Width="75" Click="LeftRefreshClick"/>
-        <Button Content="Refresh" HorizontalAlignment="Left" Margin="123,0,0,77" VerticalAlignment="Bottom" Width="75" Click="RightRefreshClick" Grid.Column="2"/>
+        <Button Content="Refresh" HorizontalAlignment="Left" Margin="123,0,0,77" VerticalAlignment="Bottom" Width="75" Click="RightRefreshClick" Grid.Column="2" />
         <Button Content="Delete" HorizontalAlignment="Left" Margin="170,0,0,77" VerticalAlignment="Bottom" Width="75" Click="LeftDeleteClick"/>
         <Button Content="Delete" HorizontalAlignment="Left" Margin="203,0,0,77" VerticalAlignment="Bottom" Width="75" Click="RightDeleteClick" Grid.Column="2"/>
         <Menu Height="22" VerticalAlignment="Top" Grid.ColumnSpan="3">
             <MenuItem Header="File">
-                <MenuItem Header="There's Nothing Here Yet"/>
+                <MenuItem Header="Refresh" Click="MenuRefreshClick"/>
             </MenuItem>
             <MenuItem Header="Preferences">
                 <MenuItem Header="Set Left Path As Default" Click="SetLeftDefault"/>
                 <MenuItem Header="Set Right Path As Default" Click="SetRightDefault"/>
+                <MenuItem x:Name="LeftFormatMenuItem" Header="Use com.mojang format for left path" IsCheckable="True" IsChecked="True" Checked="EvaluateDirectoryFormats" Unchecked="EvaluateDirectoryFormats"/>
+                <MenuItem x:Name="RightFormatMenuItem" Header="Use com.mojang format for right path" IsCheckable="True" IsChecked="True" Checked="EvaluateDirectoryFormats" Unchecked="EvaluateDirectoryFormats"/>
             </MenuItem>
         </Menu>
 
     </Grid>
 
-    
+
 </Window>
 
     

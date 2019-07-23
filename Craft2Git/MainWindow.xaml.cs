@@ -27,32 +27,49 @@ namespace Craft2Git
     {
         public PackList()
         {
-          
-            
+
         }
     }
 
+    public class DirectoryStructure
+    {
+        public string BPFolder { get; set; }
+        public string RPFolder { get; set; }
+        public string worldsFolder { get; set; }
+
+        public DirectoryStructure(string _BPFolder, string _RPFolder, string _worldsFolder)
+        {
+            BPFolder = _BPFolder;
+            RPFolder = _RPFolder;
+            worldsFolder = _worldsFolder;
+        }
+    }
+
+    enum Side
+    {
+        Left = 0,
+        Right = 1
+    }
+
+    enum PackType
+    {
+        BP = 0,
+        RP = 1,
+        World = 2
+    }
     public partial class MainWindow : Window
     {
         #region Class-wide Variables
-        PackList[] leftListGroup;
-        PackList[] rightListGroup;
-        string defaultLeftFilePath = "";
-        string defaultRightFilePath = "";
-        string leftFilePath = "";   
-        string rightFilePath = "";
-        int leftTabSelected = 0;
-        int rightTabSelected = 0;
-        System.Windows.Data.Binding leftBinding1;
-        System.Windows.Data.Binding leftBinding2;
-        System.Windows.Data.Binding leftBinding3;
-        System.Windows.Data.Binding leftBinding4;
-        System.Windows.Data.Binding rightBinding1;
-        System.Windows.Data.Binding rightBinding2;
-        System.Windows.Data.Binding rightBinding3;
-        System.Windows.Data.Binding rightBinding4;
-        FileSystemWatcher leftWatcher;
-        FileSystemWatcher rightWatcher;
+        PackList[] leftListGroup, rightListGroup;
+        string defaultLeftFilePath = "", defaultRightFilePath = "", leftFilePath = "", rightFilePath = "";
+        int leftTabSelected = 0, rightTabSelected = 0;
+        System.Windows.Data.Binding leftBinding1, leftBinding2, leftBinding3, leftBinding4, rightBinding1, rightBinding2, rightBinding3, rightBinding4;
+        FileSystemWatcher leftWatcher, rightWatcher;
+        DirectoryStructure comMojangStructure = new DirectoryStructure("development_behavior_packs", "development_resource_packs", "minecraftWorlds");
+        DirectoryStructure solvedStructure = new DirectoryStructure("BPs", "RPs", "Worlds");
+        bool isLeftComMojang = true;
+        bool isRightComMojang = true;
+        bool shouldMakeBackups = false;
         #endregion
 
         public MainWindow()
@@ -81,7 +98,6 @@ namespace Craft2Git
                         defaultRightFilePath = splitLine[1];
                     }
                 }
-                
             }
             #endregion
 
@@ -104,8 +120,6 @@ namespace Craft2Git
             leftBinding2.Source = leftListGroup[1];
             leftBinding3.Source = leftListGroup[2];
             leftBinding4.Source = leftListGroup[3];
-
-
             #endregion
 
             #region Right Side Init
@@ -127,7 +141,6 @@ namespace Craft2Git
             rightBinding2.Source = rightListGroup[1];
             rightBinding3.Source = rightListGroup[2];
             rightBinding4.Source = rightListGroup[3];
-
             #endregion
 
             InitializeComponent();
@@ -192,98 +205,142 @@ namespace Craft2Git
 
         private void LeftCopy(object sender, RoutedEventArgs e)
         {
-            if (leftList.SelectedIndex > -1)
+            
+            if (leftList.SelectedIndex <= -1) /*Prevent out of range exception*/
             {
-
-
-                string sourceFilePath = System.IO.Path.GetDirectoryName(leftListGroup[leftTabSelected][leftList.SelectedIndex].filePath);
-                string[] stringSeparators = new string[] { "\\" };
-                string[] splitEntryPath = leftListGroup[leftTabSelected][leftList.SelectedIndex].filePath.Split(stringSeparators, StringSplitOptions.None);
-
-                string destFilePath;
-                if (leftTabSelected == 3)
-                {
-                    destFilePath = System.IO.Path.Combine(rightFilePath, splitEntryPath[splitEntryPath.Length - 2]);
-                }
-                else
-                {
-                    destFilePath = System.IO.Path.Combine(rightFilePath, splitEntryPath[splitEntryPath.Length - 3], splitEntryPath[splitEntryPath.Length - 2]);
-                }
-                rightWatcher.EnableRaisingEvents = false;
-                DirectoryCopy(sourceFilePath, destFilePath, true);
-                rightWatcher.EnableRaisingEvents = true;
-                LoadRightPacks(rightFilePath);
-                if (rightList.SelectedIndex == -1)
-                {
-                    rightList.SelectedIndex = 0;
-                }
+                return;
             }
+
+            string[] destFolderNames = new string[3];
+            if (isRightComMojang)
+            {
+                destFolderNames[0] = comMojangStructure.BPFolder;
+                destFolderNames[1] = comMojangStructure.RPFolder;
+                destFolderNames[2] = comMojangStructure.worldsFolder;
+            }
+            else
+            {
+                destFolderNames[0] = solvedStructure.BPFolder;
+                destFolderNames[1] = solvedStructure.RPFolder;
+                destFolderNames[2] = solvedStructure.worldsFolder;
+            }
+
+            string sourceFilePath = System.IO.Path.GetDirectoryName(leftListGroup[leftTabSelected][leftList.SelectedIndex].filePath);
+            string[] stringSeparators = new string[] { "\\" };
+            string[] splitEntryPath = leftListGroup[leftTabSelected][leftList.SelectedIndex].filePath.Split(stringSeparators, StringSplitOptions.None);
+
+            string destFilePath = rightFilePath;
+            if (leftTabSelected != 3) /*For categorized packs*/
+            {
+                destFilePath = System.IO.Path.Combine(destFilePath, destFolderNames[leftTabSelected]);    
+            }
+            else /*For uncategorized packs*/
+            {
+            }
+            destFilePath = System.IO.Path.Combine(destFilePath, splitEntryPath[splitEntryPath.Length - 2]);
+
+            rightWatcher.EnableRaisingEvents = false;
+            DirectoryCopy(sourceFilePath, destFilePath, true);
+            rightWatcher.EnableRaisingEvents = true;
+            LoadRightPacks(rightFilePath);
+            if (rightList.SelectedIndex == -1)
+            {
+                rightList.SelectedIndex = 0;
+            } 
         }
 
         private void RightCopy(object sender, RoutedEventArgs e)
         {
-            if (rightList.SelectedIndex > -1)
+            if (rightList.SelectedIndex <= -1) /*Prevent out of range exception*/
             {
-
-
-                string sourceFilePath = System.IO.Path.GetDirectoryName(rightListGroup[rightTabSelected][rightList.SelectedIndex].filePath);
-                string[] stringSeparators = new string[] { "\\" };
-                string[] splitEntryPath = rightListGroup[rightTabSelected][rightList.SelectedIndex].filePath.Split(stringSeparators, StringSplitOptions.None);
-
-                string destFilePath;
-                if (rightTabSelected == 3)
-                {
-                    destFilePath = System.IO.Path.Combine(leftFilePath, splitEntryPath[splitEntryPath.Length - 2]);
-                }
-                else
-                {
-                    destFilePath = System.IO.Path.Combine(leftFilePath, splitEntryPath[splitEntryPath.Length - 3], splitEntryPath[splitEntryPath.Length - 2]);
-                }
-                leftWatcher.EnableRaisingEvents = false;
-                DirectoryCopy(sourceFilePath, destFilePath, true);
-                leftWatcher.EnableRaisingEvents = true;
-                LoadLeftPacks(leftFilePath);
-                if (leftList.SelectedIndex == -1)
-                {
-                    leftList.SelectedIndex = 0;
-                }
+                return;
             }
+
+            string[] destFolderNames = new string[3];
+            if (isLeftComMojang)
+            {
+                destFolderNames[0] = comMojangStructure.BPFolder;
+                destFolderNames[1] = comMojangStructure.RPFolder;
+                destFolderNames[2] = comMojangStructure.worldsFolder;
+            }
+            else
+            {
+                destFolderNames[0] = solvedStructure.BPFolder;
+                destFolderNames[1] = solvedStructure.RPFolder;
+                destFolderNames[2] = solvedStructure.worldsFolder;
+            }
+
+            string sourceFilePath = System.IO.Path.GetDirectoryName(rightListGroup[rightTabSelected][rightList.SelectedIndex].filePath);
+            string[] stringSeparators = new string[] { "\\" };
+            string[] splitEntryPath = rightListGroup[rightTabSelected][rightList.SelectedIndex].filePath.Split(stringSeparators, StringSplitOptions.None);
+
+            string destFilePath = leftFilePath;
+            if (rightTabSelected != 3) /*For categorized packs*/
+            {
+                destFilePath = System.IO.Path.Combine(destFilePath, destFolderNames[rightTabSelected]);
+            }
+            else /*For uncategorized packs*/
+            {
+            }
+            destFilePath = System.IO.Path.Combine(destFilePath, splitEntryPath[splitEntryPath.Length - 2]);
+
+            leftWatcher.EnableRaisingEvents = false;
+            DirectoryCopy(sourceFilePath, destFilePath, true);
+            leftWatcher.EnableRaisingEvents = true;
+            LoadLeftPacks(leftFilePath);
+            if (leftList.SelectedIndex == -1)
+            {
+                leftList.SelectedIndex = 0;
+            }     
         }
 
         private void LoadLeftPacks(string filePath)
         {
-            
+            string[] folderNames = new string[3];
+            if (isLeftComMojang)
+            {
+                folderNames[0] = comMojangStructure.BPFolder;
+                folderNames[1] = comMojangStructure.RPFolder;
+                folderNames[2] = comMojangStructure.worldsFolder;
+            }
+            else
+            {
+                folderNames[0] = solvedStructure.BPFolder;
+                folderNames[1] = solvedStructure.RPFolder;
+                folderNames[2] = solvedStructure.worldsFolder;
+            }
+
+
             #region Behavior Packs
             ////////////////////
             //Behavior packs////
             ////////////////////
-            string[] subDirectories;
+            string[] packFolders;
             leftListGroup[0].Clear();
             try
             {
-                subDirectories = Directory.GetDirectories(System.IO.Path.Combine(filePath, "development_behavior_packs"));
+                /*I was HERE. I was working on directoryNames array*/
+                packFolders = Directory.GetDirectories(System.IO.Path.Combine(filePath, folderNames[0]));
 
-                for (int i = 0; i < subDirectories.Length; i++)
+                for (int i = 0; i < packFolders.Length; i++)
                 {
-                    string filePathAppended = System.IO.Path.Combine(subDirectories[i], "manifest.json");
-                    if (File.Exists(filePathAppended))
+                    string manifestFilePath = System.IO.Path.Combine(packFolders[i], "manifest.json");
+                    if (File.Exists(manifestFilePath))
                     {
 
-                        string contents = File.ReadAllText(filePathAppended);
-                        PackEntry newEntry = Newtonsoft.Json.JsonConvert.DeserializeObject<PackEntry>(contents);
-                        newEntry.filePath = filePathAppended;
-
-                        newEntry.iconPath = System.IO.Path.Combine(subDirectories[i], "pack_icon.png");
-
+                        string manifestContents = File.ReadAllText(manifestFilePath);
+                        PackEntry newEntry = Newtonsoft.Json.JsonConvert.DeserializeObject<PackEntry>(manifestContents);
+                        newEntry.filePath = manifestFilePath;
+                        newEntry.iconPath = System.IO.Path.Combine(packFolders[i], "pack_icon.png");
                         newEntry.loadIcon();
 
                         //Handing name/desc stored in lang files
                         if (newEntry.header.name == "pack.name")
                         {
-                            filePathAppended = System.IO.Path.Combine(subDirectories[i], "texts/en_US.lang");
-                            if (File.Exists(filePathAppended))
+                            manifestFilePath = System.IO.Path.Combine(packFolders[i], "texts/en_US.lang");
+                            if (File.Exists(manifestFilePath))
                             {
-                                string[] langLines = File.ReadAllLines(filePathAppended);
+                                string[] langLines = File.ReadAllLines(manifestFilePath);
                                 for (int j = 0; j < langLines.Length; j++)
                                 {
                                     string[] stringSeparators = new string[] { "=" };
@@ -300,13 +357,13 @@ namespace Craft2Git
                             }
                             
                         }
-                        
                         leftListGroup[0].Add(newEntry);
                     }
                 }
             }
             catch (Exception)
             {
+
             }
             
             #endregion
@@ -317,11 +374,11 @@ namespace Craft2Git
             leftListGroup[1].Clear();
             try
             {
-                subDirectories = Directory.GetDirectories(System.IO.Path.Combine(filePath, "development_resource_packs"));
+                packFolders = Directory.GetDirectories(System.IO.Path.Combine(filePath, folderNames[1]));
 
-                for (int i = 0; i < subDirectories.Length; i++)
+                for (int i = 0; i < packFolders.Length; i++)
                 {
-                    string filePathAppended = System.IO.Path.Combine(subDirectories[i], "manifest.json");
+                    string filePathAppended = System.IO.Path.Combine(packFolders[i], "manifest.json");
                     if (File.Exists(filePathAppended))
                     {
 
@@ -329,14 +386,14 @@ namespace Craft2Git
                         PackEntry newEntry = Newtonsoft.Json.JsonConvert.DeserializeObject<PackEntry>(contents);
                         newEntry.filePath = filePathAppended;
 
-                        newEntry.iconPath = System.IO.Path.Combine(subDirectories[i], "pack_icon.png");
+                        newEntry.iconPath = System.IO.Path.Combine(packFolders[i], "pack_icon.png");
 
                         newEntry.loadIcon();
 
                         //Handing name/desc stored in lang files
                         if (newEntry.header.name == "pack.name")
                         {
-                            filePathAppended = System.IO.Path.Combine(subDirectories[i], "texts/en_US.lang");
+                            filePathAppended = System.IO.Path.Combine(packFolders[i], "texts/en_US.lang");
                             if (File.Exists(filePathAppended))
                             {
                                 string[] langLines = File.ReadAllLines(filePathAppended);
@@ -363,8 +420,6 @@ namespace Craft2Git
             }
             catch (Exception)
             {
-
-
             }
 
             #endregion
@@ -376,11 +431,11 @@ namespace Craft2Git
             leftListGroup[2].Clear();
             try
             {
-                subDirectories = Directory.GetDirectories(System.IO.Path.Combine(filePath, "minecraftWorlds"));
+                packFolders = Directory.GetDirectories(System.IO.Path.Combine(filePath, folderNames[2]));
 
-                for (int i = 0; i < subDirectories.Length; i++)
+                for (int i = 0; i < packFolders.Length; i++)
                 {
-                    string filePathAppended = System.IO.Path.Combine(subDirectories[i], "levelname.txt");
+                    string filePathAppended = System.IO.Path.Combine(packFolders[i], "levelname.txt");
                     if (File.Exists(filePathAppended))
                     {
 
@@ -389,7 +444,7 @@ namespace Craft2Git
                         newEntry.header.name = contents;
                         newEntry.filePath = filePathAppended;
 
-                        newEntry.iconPath = System.IO.Path.Combine(subDirectories[i], "world_icon.jpeg");
+                        newEntry.iconPath = System.IO.Path.Combine(packFolders[i], "world_icon.jpeg");
 
                         newEntry.loadIcon();
 
@@ -412,11 +467,11 @@ namespace Craft2Git
             leftListGroup[3].Clear();
             try
             {
-                subDirectories = Directory.GetDirectories(filePath);
+                packFolders = Directory.GetDirectories(filePath);
 
-                for (int i = 0; i < subDirectories.Length; i++)
+                for (int i = 0; i < packFolders.Length; i++)
                 {
-                    string filePathAppended = System.IO.Path.Combine(subDirectories[i], "manifest.json");
+                    string filePathAppended = System.IO.Path.Combine(packFolders[i], "manifest.json");
                     if (File.Exists(filePathAppended))
                     {
 
@@ -424,7 +479,7 @@ namespace Craft2Git
                         PackEntry newEntry = Newtonsoft.Json.JsonConvert.DeserializeObject<PackEntry>(contents);
                         newEntry.filePath = filePathAppended;
 
-                        newEntry.iconPath = System.IO.Path.Combine(subDirectories[i], "pack_icon.png");
+                        newEntry.iconPath = System.IO.Path.Combine(packFolders[i], "pack_icon.png");
 
                         newEntry.loadIcon();
 
@@ -450,25 +505,37 @@ namespace Craft2Git
                     leftList.SelectedIndex = -1;
                 }
             }
-            
         }
 
         private void LoadRightPacks(string filePath)
         {
+            string[] folderNames = new string[3];
+            if (isRightComMojang)
+            {
+                folderNames[0] = comMojangStructure.BPFolder;
+                folderNames[1] = comMojangStructure.RPFolder;
+                folderNames[2] = comMojangStructure.worldsFolder;
+            }
+            else
+            {
+                folderNames[0] = solvedStructure.BPFolder;
+                folderNames[1] = solvedStructure.RPFolder;
+                folderNames[2] = solvedStructure.worldsFolder;
+            }
 
             #region Behavior Packs
             ////////////////////
             //Behavior packs////
             ////////////////////
-            string[] subDirectories;
+            string[] packFolders;
             rightListGroup[0].Clear();
             try
             {
-                subDirectories = Directory.GetDirectories(System.IO.Path.Combine(filePath, "development_behavior_packs"));
+                packFolders = Directory.GetDirectories(System.IO.Path.Combine(filePath, folderNames[0]));
 
-                for (int i = 0; i < subDirectories.Length; i++)
+                for (int i = 0; i < packFolders.Length; i++)
                 {
-                    string filePathAppended = System.IO.Path.Combine(subDirectories[i], "manifest.json");
+                    string filePathAppended = System.IO.Path.Combine(packFolders[i], "manifest.json");
                     if (File.Exists(filePathAppended))
                     {
 
@@ -476,14 +543,14 @@ namespace Craft2Git
                         PackEntry newEntry = Newtonsoft.Json.JsonConvert.DeserializeObject<PackEntry>(contents);
                         newEntry.filePath = filePathAppended;
 
-                        newEntry.iconPath = System.IO.Path.Combine(subDirectories[i], "pack_icon.png");
+                        newEntry.iconPath = System.IO.Path.Combine(packFolders[i], "pack_icon.png");
 
                         newEntry.loadIcon();
 
                         //Handing name/desc stored in lang files
                         if (newEntry.header.name == "pack.name")
                         {
-                            filePathAppended = System.IO.Path.Combine(subDirectories[i], "texts/en_US.lang");
+                            filePathAppended = System.IO.Path.Combine(packFolders[i], "texts/en_US.lang");
                             if (File.Exists(filePathAppended))
                             {
                                 string[] langLines = File.ReadAllLines(filePathAppended);
@@ -521,11 +588,11 @@ namespace Craft2Git
             rightListGroup[1].Clear();
             try
             {
-                subDirectories = Directory.GetDirectories(System.IO.Path.Combine(filePath, "development_resource_packs"));
+                packFolders = Directory.GetDirectories(System.IO.Path.Combine(filePath, folderNames[1]));
 
-                for (int i = 0; i < subDirectories.Length; i++)
+                for (int i = 0; i < packFolders.Length; i++)
                 {
-                    string filePathAppended = System.IO.Path.Combine(subDirectories[i], "manifest.json");
+                    string filePathAppended = System.IO.Path.Combine(packFolders[i], "manifest.json");
                     if (File.Exists(filePathAppended))
                     {
 
@@ -533,14 +600,14 @@ namespace Craft2Git
                         PackEntry newEntry = Newtonsoft.Json.JsonConvert.DeserializeObject<PackEntry>(contents);
                         newEntry.filePath = filePathAppended;
 
-                        newEntry.iconPath = System.IO.Path.Combine(subDirectories[i], "pack_icon.png");
+                        newEntry.iconPath = System.IO.Path.Combine(packFolders[i], "pack_icon.png");
 
                         newEntry.loadIcon();
 
                         //Handing name/desc stored in lang files
                         if (newEntry.header.name == "pack.name")
                         {
-                            filePathAppended = System.IO.Path.Combine(subDirectories[i], "texts/en_US.lang");
+                            filePathAppended = System.IO.Path.Combine(packFolders[i], "texts/en_US.lang");
                             if (File.Exists(filePathAppended))
                             {
                                 string[] langLines = File.ReadAllLines(filePathAppended);
@@ -580,11 +647,11 @@ namespace Craft2Git
             rightListGroup[2].Clear();
             try
             {
-                subDirectories = Directory.GetDirectories(System.IO.Path.Combine(filePath, "minecraftWorlds"));
+                packFolders = Directory.GetDirectories(System.IO.Path.Combine(filePath, folderNames[2]));
 
-                for (int i = 0; i < subDirectories.Length; i++)
+                for (int i = 0; i < packFolders.Length; i++)
                 {
-                    string filePathAppended = System.IO.Path.Combine(subDirectories[i], "levelname.txt");
+                    string filePathAppended = System.IO.Path.Combine(packFolders[i], "levelname.txt");
                     if (File.Exists(filePathAppended))
                     {
 
@@ -593,7 +660,7 @@ namespace Craft2Git
                         newEntry.header.name = contents;
                         newEntry.filePath = filePathAppended;
 
-                        newEntry.iconPath = System.IO.Path.Combine(subDirectories[i], "world_icon.jpeg");
+                        newEntry.iconPath = System.IO.Path.Combine(packFolders[i], "world_icon.jpeg");
 
                         newEntry.loadIcon();
 
@@ -616,11 +683,11 @@ namespace Craft2Git
             rightListGroup[3].Clear();
             try
             {
-                subDirectories = Directory.GetDirectories(filePath);
+                packFolders = Directory.GetDirectories(filePath);
 
-                for (int i = 0; i < subDirectories.Length; i++)
+                for (int i = 0; i < packFolders.Length; i++)
                 {
-                    string filePathAppended = System.IO.Path.Combine(subDirectories[i], "manifest.json");
+                    string filePathAppended = System.IO.Path.Combine(packFolders[i], "manifest.json");
                     if (File.Exists(filePathAppended))
                     {
 
@@ -628,7 +695,7 @@ namespace Craft2Git
                         PackEntry newEntry = Newtonsoft.Json.JsonConvert.DeserializeObject<PackEntry>(contents);
                         newEntry.filePath = filePathAppended;
 
-                        newEntry.iconPath = System.IO.Path.Combine(subDirectories[i], "pack_icon.png");
+                        newEntry.iconPath = System.IO.Path.Combine(packFolders[i], "pack_icon.png");
 
                         newEntry.loadIcon();
 
@@ -731,6 +798,21 @@ namespace Craft2Git
                 leftTabControl.SelectedIndex = 3;
             }
             UpdateRightFocus();
+        }
+
+        private void LeftRefreshClick(object sender, RoutedEventArgs e)
+        {
+            Refresh();
+        }
+
+        private void RightRefreshClick(object sender, RoutedEventArgs e)
+        {
+            Refresh();
+        }
+
+        private void MenuRefreshClick(object sender, RoutedEventArgs e)
+        {
+            Refresh();
         }
 
         private void UpdateLeftFocus()
@@ -867,16 +949,12 @@ namespace Craft2Git
             }
         }
 
-        private void LeftRefreshClick(object sender, RoutedEventArgs e)
+        private void Refresh()
         {
             LoadLeftPacks(leftFilePath);
-            leftList.SelectedIndex = 0;
-        }
-
-        private void RightRefreshClick(object sender, RoutedEventArgs e)
-        {
+            //leftList.SelectedIndex = 0;
             LoadRightPacks(rightFilePath);
-            leftList.SelectedIndex = 0;
+            //leftList.SelectedIndex = 0;
         }
 
         private void LeftDeleteClick(object sender, RoutedEventArgs e)
@@ -969,12 +1047,19 @@ namespace Craft2Git
         {
             defaultRightFilePath = rightText.Text;
             WriteSettings();
-        }
+        } 
 
-        private void WriteSettings()
+        private void EvaluateDirectoryFormats(object sender, RoutedEventArgs e)
         {
-            string[] contents = new string[] { "leftDefaultPath=" + defaultLeftFilePath, "rightDefaultPath=" + defaultRightFilePath };
-            File.WriteAllLines(@"settings.txt", contents);
+            if (((System.Windows.Controls.MenuItem)sender).Name == "LeftFormatMenuItem")
+            {
+                isLeftComMojang = ((System.Windows.Controls.MenuItem)sender).IsChecked;
+            }
+            else if (((System.Windows.Controls.MenuItem)sender).Name == "RightFormatMenuItem")
+            {
+                isRightComMojang = ((System.Windows.Controls.MenuItem)sender).IsChecked;
+            }
+            Refresh();
         }
 
         private void OnLeftDirectoryChange(object source, FileSystemEventArgs e)
@@ -994,5 +1079,12 @@ namespace Craft2Git
                 LoadRightPacks(rightFilePath);
             });
         }
+
+        private void WriteSettings()
+        {
+            string[] contents = new string[] { "leftDefaultPath=" + defaultLeftFilePath, "rightDefaultPath=" + defaultRightFilePath };
+            File.WriteAllLines(@"settings.txt", contents);
+        }
+
     }
 }
