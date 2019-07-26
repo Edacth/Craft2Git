@@ -2,7 +2,7 @@ Craft2Git is a tool designed to assist in Minecraft addon (.MCPACK, .MCWORLD) de
 by making it easy to transfer them between a folder such as a git repository and the game directory.
 
 HOW TO USE:
-0. I have included the directories "Addon Source" and "Addon Destination" inside this zip to serve as
+0. I have included the directories "Addon Source" and "Addon Destination" inside the release zips to serve as
 useful examples. Feel free to use them.
 
 1.Enter your version control/backup path in one textbox and the path of your game's "com.mojang" 
