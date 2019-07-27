@@ -66,7 +66,7 @@ namespace Craft2Git
         System.Windows.Data.Binding leftBinding1, leftBinding2, leftBinding3, leftBinding4, rightBinding1, rightBinding2, rightBinding3, rightBinding4;
         FileSystemWatcher leftWatcher, rightWatcher;
         DirectoryStructure comMojangStructure = new DirectoryStructure("development_behavior_packs", "development_resource_packs", "minecraftWorlds");
-        DirectoryStructure solvedStructure = new DirectoryStructure("BPs", "RPs", "Worlds");
+        DirectoryStructure repoStructure = new DirectoryStructure("BPs", "RPs", "Worlds");
         bool isLeftComMojang = true;
         bool isRightComMojang = true;
         bool shouldMakeBackups = false;
@@ -220,9 +220,9 @@ namespace Craft2Git
             }
             else
             {
-                destFolderNames[0] = solvedStructure.BPFolder;
-                destFolderNames[1] = solvedStructure.RPFolder;
-                destFolderNames[2] = solvedStructure.worldsFolder;
+                destFolderNames[0] = repoStructure.BPFolder;
+                destFolderNames[1] = repoStructure.RPFolder;
+                destFolderNames[2] = repoStructure.worldsFolder;
             }
 
             string sourceFilePath = System.IO.Path.GetDirectoryName(leftListGroup[leftTabSelected][leftList.SelectedIndex].filePath);
@@ -265,9 +265,9 @@ namespace Craft2Git
             }
             else
             {
-                destFolderNames[0] = solvedStructure.BPFolder;
-                destFolderNames[1] = solvedStructure.RPFolder;
-                destFolderNames[2] = solvedStructure.worldsFolder;
+                destFolderNames[0] = repoStructure.BPFolder;
+                destFolderNames[1] = repoStructure.RPFolder;
+                destFolderNames[2] = repoStructure.worldsFolder;
             }
 
             string sourceFilePath = System.IO.Path.GetDirectoryName(rightListGroup[rightTabSelected][rightList.SelectedIndex].filePath);
@@ -305,9 +305,9 @@ namespace Craft2Git
             }
             else
             {
-                folderNames[0] = solvedStructure.BPFolder;
-                folderNames[1] = solvedStructure.RPFolder;
-                folderNames[2] = solvedStructure.worldsFolder;
+                folderNames[0] = repoStructure.BPFolder;
+                folderNames[1] = repoStructure.RPFolder;
+                folderNames[2] = repoStructure.worldsFolder;
             }
 
 
@@ -319,7 +319,7 @@ namespace Craft2Git
             leftListGroup[0].Clear();
             try
             {
-                /*I was HERE. I was working on directoryNames array*/
+                
                 packFolders = Directory.GetDirectories(System.IO.Path.Combine(filePath, folderNames[0]));
 
                 for (int i = 0; i < packFolders.Length; i++)
@@ -518,9 +518,9 @@ namespace Craft2Git
             }
             else
             {
-                folderNames[0] = solvedStructure.BPFolder;
-                folderNames[1] = solvedStructure.RPFolder;
-                folderNames[2] = solvedStructure.worldsFolder;
+                folderNames[0] = repoStructure.BPFolder;
+                folderNames[1] = repoStructure.RPFolder;
+                folderNames[2] = repoStructure.worldsFolder;
             }
 
             #region Behavior Packs
