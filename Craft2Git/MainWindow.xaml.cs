@@ -20,9 +20,46 @@ using System.Windows.Forms;
 using System.Drawing;
 using System.Diagnostics;
 using System.Security.Permissions;
+using TabControl = System.Windows.Controls.TabControl;
+using Button = System.Windows.Controls.Button;
+using TextBox = System.Windows.Controls.TextBox;
+using ComboBox = System.Windows.Controls.ComboBox;
 
 namespace Craft2Git
 {
+    public class PackHub
+    {
+        //Array of lists that holds the data of each pack. One for each tab of the list box
+        PackList[] packLists;
+        //Array of bindings. One for each tab of the list box
+        System.Windows.Data.Binding[] listBoxBindings;
+        string defaultFilePath, filePath;
+        int selectedTab;
+        FileSystemWatcher watcher;
+        StructureType structureType;
+        
+
+        //UI Objects
+        TabControl tabControl;
+        Button copyButton;
+        Button deleteButton;
+        TextBox directoryBox;
+        Button browseButton;
+        ComboBox structureComboBox;
+
+        public PackHub()
+        {
+            packLists = new PackList[4];
+            for (int i = 0; i < packLists.Length; i++)
+            {
+                packLists[i] = new PackList();
+                listBoxBindings[i] = new System.Windows.Data.Binding();
+                listBoxBindings[i].Source = packLists[i];
+            }
+
+        }
+    }
+
     public class PackList : ObservableCollection<PackEntry>
     {
         public PackList()
@@ -56,6 +93,13 @@ namespace Craft2Git
         BP = 0,
         RP = 1,
         World = 2
+    }
+
+    enum StructureType
+    {
+        comMojang = 0,
+        singleRepo = 1,
+        solvedStructure = 2
     }
     public partial class MainWindow : Window
     {
