@@ -2,10 +2,22 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:i="http://schemas.microsoft.com/expression/2010/interactivity" 
         xmlns:local="clr-namespace:Craft2Git"
         mc:Ignorable="d"
         Title="Craft2Git" Height="500" Width="800" MinWidth="800" MinHeight="450">
+    <Window.CommandBindings>
+        <CommandBinding Command="{x:Static local:MainWindow.DeletePackCmd}"
+                        Executed="DeletePackCmdExecuted"
+                        CanExecute="DeletePackCmdCanExecute"/>
+        <CommandBinding Command="{x:Static local:MainWindow.TabChangedCmd}"
+                        Executed="TabChangedCmdExecuted"
+                        />
+        <CommandBinding Command="{x:Static local:MainWindow.DirectoryChangedCmd}"
+                        Executed="DirectoryChangedCmdExecuted"
+                        />
+    </Window.CommandBindings>
     <Window.Resources>
         <DataTemplate x:Key="addonEntry" >
             <Grid>
@@ -30,10 +42,22 @@
             <ColumnDefinition Width="65*"></ColumnDefinition>
         </Grid.ColumnDefinitions>
         <Button x:Name="rightCopy" Content="Copy" Grid.Column="2" Margin="43,0,0,77" HorizontalAlignment="Left" VerticalAlignment="Bottom" Width="75" Click="RightCopy"/>
-        <TextBox x:Name="leftText" Height="23" Margin="10,0,90,15" Text="TextBox" TextChanged="LeftText_TextChanged" VerticalAlignment="Bottom"/>
-        <Button x:Name="leftCopy" Content="Copy" Grid.Column="0" Margin="10,0,0,77" HorizontalAlignment="Left" VerticalAlignment="Bottom" Width="75" Click="LeftCopy"/>
-        <TabControl x:Name="leftTabControl" Margin="10,27,43,110" SelectionChanged="LeftTabChanged" >
-
+        <TextBox x:Name="leftText" Height="23" Margin="10,0,90,15" Text="TextBox" VerticalAlignment="Bottom">
+            <i:Interaction.Triggers>
+                <i:EventTrigger EventName="TextChanged">
+                    <i:InvokeCommandAction Command="{x:Static local:MainWindow.DirectoryChangedCmd}" 
+                                           CommandParameter="left"/>
+                </i:EventTrigger>
+            </i:Interaction.Triggers>
+        </TextBox>
+        <Button x:Name="leftCopyButton" Content="Copy" Grid.Column="0" Margin="10,0,0,77" HorizontalAlignment="Left" VerticalAlignment="Bottom" Width="75" Click="LeftCopy"/>
+        <TabControl x:Name="leftTabControl" Margin="10,27,43,110" SelectedIndex="0">
+            <i:Interaction.Triggers>
+                <i:EventTrigger EventName="SelectionChanged">
+                    <i:InvokeCommandAction Command="{x:Static local:MainWindow.TabChangedCmd}" 
+                                           CommandParameter="{Binding ElementName=leftTabControl, Path=SelectedIndex}"/>
+                </i:EventTrigger>
+            </i:Interaction.Triggers>
             <TabItem x:Name="leftBehaviorTab" Header="Behavior">
                 <Grid Background="#FFE5E5E5"/>
             </TabItem>
@@ -59,10 +83,23 @@
             </TabItem>
 
         </TabControl>
-        <ListBox x:Name="leftList" Margin="22,59,54,120" ItemsSource="{Binding}" ItemTemplate="{DynamicResource ResourceKey=addonEntry}"/>
-        <TextBox x:Name="rightText" Height="23" Margin="10,0,90,15" Text="TextBox" TextChanged="RightText_TextChanged" Grid.Column="2" VerticalAlignment="Bottom"/>
-        <TabControl x:Name="rightTabControl" Margin="43,27,10,110" SelectionChanged="RightTabChanged" Grid.Column="2" >
-
+        <ListBox x:Name="leftList" Margin="22,59,54,120" ItemsSource="{Binding}" ItemTemplate="{DynamicResource ResourceKey=addonEntry}">
+        </ListBox>
+        <TextBox x:Name="rightText" Height="23" Margin="10,0,90,15" Text="TextBox" Grid.Column="2" VerticalAlignment="Bottom">
+            <i:Interaction.Triggers>
+                <i:EventTrigger EventName="TextChanged">
+                    <i:InvokeCommandAction Command="{x:Static local:MainWindow.DirectoryChangedCmd}" 
+                                           CommandParameter="right"/>
+                </i:EventTrigger>
+            </i:Interaction.Triggers>
+        </TextBox>
+        <TabControl x:Name="rightTabControl" Margin="43,27,10,110" Grid.Column="2" SelectedIndex="3" >
+            <i:Interaction.Triggers>
+                <i:EventTrigger EventName="SelectionChanged">
+                    <i:InvokeCommandAction Command="{x:Static local:MainWindow.TabChangedCmd}" 
+                                           CommandParameter="{Binding ElementName=rightTabControl, Path=SelectedIndex}" />
+                </i:EventTrigger>
+            </i:Interaction.Triggers>
             <TabItem x:Name="rightBehaviorTab" Header="Behavior">
                 <Grid Background="#FFE5E5E5" Margin="0,-1,0,1"/>
             </TabItem>
@@ -92,10 +129,12 @@
         <Grid VerticalAlignment="Stretch"  Background="#FFE5E5E5" Grid.Column="1" HorizontalAlignment="Left" Width="12"/>
         <Button x:Name="leftOpen" Content="Browse" HorizontalAlignment="Right" Margin="0,0,10,15" VerticalAlignment="Bottom" Width="75" Click="LeftOpenDialog"/>
         <Button x:Name="rightOpen" Content="Browse" HorizontalAlignment="Right" Margin="0,0,10,15" VerticalAlignment="Bottom" Width="75" Click="RightOpenDialog" Grid.Column="2"/>
-        <Button Content="Refresh" HorizontalAlignment="Left" Margin="90,0,0,77" VerticalAlignment="Bottom" Width="75" Click="LeftRefreshClick"/>
-        <Button Content="Refresh" HorizontalAlignment="Left" Margin="123,0,0,77" VerticalAlignment="Bottom" Width="75" Click="RightRefreshClick" Grid.Column="2" />
-        <Button Content="Delete" HorizontalAlignment="Left" Margin="170,0,0,77" VerticalAlignment="Bottom" Width="75" Click="LeftDeleteClick"/>
-        <Button Content="Delete" HorizontalAlignment="Left" Margin="203,0,0,77" VerticalAlignment="Bottom" Width="75" Click="RightDeleteClick" Grid.Column="2"/>
+        <Button Content="Delete" HorizontalAlignment="Left" Margin="170,0,0,77" VerticalAlignment="Bottom" Width="75" 
+                Command="{x:Static local:MainWindow.DeletePackCmd}"
+                CommandParameter="left"/>
+        <Button Content="Delete" HorizontalAlignment="Left" Margin="203,0,0,77" VerticalAlignment="Bottom" Width="75" Grid.Column="2"
+                Command="{x:Static local:MainWindow.DeletePackCmd}"
+                CommandParameter="right"/>
         <Menu Height="22" VerticalAlignment="Top" Grid.ColumnSpan="3">
             <MenuItem Header="File">
                 <MenuItem Header="Refresh" Click="MenuRefreshClick"/>

@@ -1,28 +1,22 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 using System.IO;
-using Craft2Git;
-using Newtonsoft;
 using System.Windows.Forms;
-using System.Drawing;
-using System.Diagnostics;
-using System.Security.Permissions;
+using System.Windows.Interactivity;
+using ListBox = System.Windows.Controls.ListBox;
+using TextBox = System.Windows.Controls.TextBox;
 
 namespace Craft2Git
 {
+    public class G2CPanel
+    {
+        //TODO. Fill this with all the methods and functionality of the separated variables.
+    }
+
     public class PackList : ObservableCollection<PackEntry>
     {
         public PackList()
@@ -57,12 +51,13 @@ namespace Craft2Git
         RP = 1,
         World = 2
     }
+
+
     public partial class MainWindow : Window
     {
         #region Class-wide Variables
         PackList[] leftListGroup, rightListGroup;
         string defaultLeftFilePath = "", defaultRightFilePath = "", leftFilePath = "", rightFilePath = "";
-        int leftTabSelected = 0, rightTabSelected = 0;
         System.Windows.Data.Binding leftBinding1, leftBinding2, leftBinding3, leftBinding4, rightBinding1, rightBinding2, rightBinding3, rightBinding4;
         FileSystemWatcher leftWatcher, rightWatcher;
         DirectoryStructure comMojangStructure = new DirectoryStructure("development_behavior_packs", "development_resource_packs", "minecraftWorlds");
@@ -70,6 +65,14 @@ namespace Craft2Git
         bool isLeftComMojang = true;
         bool isRightComMojang = true;
         bool shouldMakeBackups = false;
+        bool ignoreNextTabChange = false;
+        #endregion
+
+        #region Commands
+        public static RoutedCommand DeletePackCmd = new RoutedCommand();
+        public static RoutedCommand CopyPackCmd = new RoutedCommand();
+        public static RoutedCommand TabChangedCmd = new RoutedCommand();
+        public static RoutedCommand DirectoryChangedCmd = new RoutedCommand();
         #endregion
 
         public MainWindow()
@@ -147,11 +150,15 @@ namespace Craft2Git
 
             leftFilePath = defaultLeftFilePath;
             rightFilePath = defaultRightFilePath;
-            leftList.SelectedIndex = leftTabSelected;
-            rightList.SelectedIndex = rightTabSelected;
 
-            UpdateLeftFocus();
-            UpdateRightFocus();
+            ChangePackTypeFocus(0);
+
+            leftText.Text = leftFilePath;
+            rightText.Text = rightFilePath;
+            //leftText.AddHandler(TextBox.TextChangedEvent, new RoutedEventHandler(LeftText_TextChanged));
+            //rightText.AddHandler(TextBox.TextChangedEvent, new RoutedEventHandler(RightText_TextChanged));
+
+            Refresh(true);
 
             #region Left File Watcher
             //This region is based on an example from MSDN
@@ -199,8 +206,7 @@ namespace Craft2Git
             rightWatcher.Deleted += OnRightDirectoryChange;
             #endregion
 
-            leftText.Text = leftFilePath;
-            rightText.Text = rightFilePath; 
+            
         }
 
         private void LeftCopy(object sender, RoutedEventArgs e)
@@ -225,14 +231,14 @@ namespace Craft2Git
                 destFolderNames[2] = solvedStructure.worldsFolder;
             }
 
-            string sourceFilePath = System.IO.Path.GetDirectoryName(leftListGroup[leftTabSelected][leftList.SelectedIndex].filePath);
+            string sourceFilePath = System.IO.Path.GetDirectoryName(leftListGroup[leftTabControl.SelectedIndex][leftList.SelectedIndex].filePath);
             string[] stringSeparators = new string[] { "\\" };
-            string[] splitEntryPath = leftListGroup[leftTabSelected][leftList.SelectedIndex].filePath.Split(stringSeparators, StringSplitOptions.None);
+            string[] splitEntryPath = leftListGroup[leftTabControl.SelectedIndex][leftList.SelectedIndex].filePath.Split(stringSeparators, StringSplitOptions.None);
 
             string destFilePath = rightFilePath;
-            if (leftTabSelected != 3) /*For categorized packs*/
+            if (leftTabControl.SelectedIndex != 3) /*For categorized packs*/
             {
-                destFilePath = System.IO.Path.Combine(destFilePath, destFolderNames[leftTabSelected]);    
+                destFilePath = System.IO.Path.Combine(destFilePath, destFolderNames[leftTabControl.SelectedIndex]);    
             }
             else /*For uncategorized packs*/
             {
@@ -242,7 +248,7 @@ namespace Craft2Git
             rightWatcher.EnableRaisingEvents = false;
             DirectoryCopy(sourceFilePath, destFilePath, true);
             rightWatcher.EnableRaisingEvents = true;
-            LoadRightPacks(rightFilePath);
+            LoadRightPacks(rightFilePath, true);
             if (rightList.SelectedIndex == -1)
             {
                 rightList.SelectedIndex = 0;
@@ -270,14 +276,14 @@ namespace Craft2Git
                 destFolderNames[2] = solvedStructure.worldsFolder;
             }
 
-            string sourceFilePath = System.IO.Path.GetDirectoryName(rightListGroup[rightTabSelected][rightList.SelectedIndex].filePath);
+            string sourceFilePath = System.IO.Path.GetDirectoryName(rightListGroup[rightTabControl.SelectedIndex][rightList.SelectedIndex].filePath);
             string[] stringSeparators = new string[] { "\\" };
-            string[] splitEntryPath = rightListGroup[rightTabSelected][rightList.SelectedIndex].filePath.Split(stringSeparators, StringSplitOptions.None);
+            string[] splitEntryPath = rightListGroup[rightTabControl.SelectedIndex][rightList.SelectedIndex].filePath.Split(stringSeparators, StringSplitOptions.None);
 
             string destFilePath = leftFilePath;
-            if (rightTabSelected != 3) /*For categorized packs*/
+            if (rightTabControl.SelectedIndex != 3) /*For categorized packs*/
             {
-                destFilePath = System.IO.Path.Combine(destFilePath, destFolderNames[rightTabSelected]);
+                destFilePath = System.IO.Path.Combine(destFilePath, destFolderNames[rightTabControl.SelectedIndex]);
             }
             else /*For uncategorized packs*/
             {
@@ -287,14 +293,14 @@ namespace Craft2Git
             leftWatcher.EnableRaisingEvents = false;
             DirectoryCopy(sourceFilePath, destFilePath, true);
             leftWatcher.EnableRaisingEvents = true;
-            LoadLeftPacks(leftFilePath);
+            LoadLeftPacks(leftFilePath, true);
             if (leftList.SelectedIndex == -1)
             {
                 leftList.SelectedIndex = 0;
             }     
         }
 
-        private void LoadLeftPacks(string filePath)
+        private void LoadLeftPacks(string filePath, bool resetIndex)
         {
             string[] folderNames = new string[3];
             if (isLeftComMojang)
@@ -319,7 +325,7 @@ namespace Craft2Git
             leftListGroup[0].Clear();
             try
             {
-                /*I was HERE. I was working on directoryNames array*/
+
                 packFolders = Directory.GetDirectories(System.IO.Path.Combine(filePath, folderNames[0]));
 
                 for (int i = 0; i < packFolders.Length; i++)
@@ -367,6 +373,7 @@ namespace Craft2Git
             }
             
             #endregion
+
             #region Resource Packs
             ////////////////////
             //Resource packs////
@@ -494,20 +501,14 @@ namespace Craft2Git
             }
 
             #endregion
-            if (leftList != null)
+
+            if (resetIndex && leftList.SelectedIndex > -1)
             {
-                if (leftListGroup[leftTabSelected].Count > 0)
-                {
-                    leftList.SelectedIndex = 0;
-                }
-                else
-                {
-                    leftList.SelectedIndex = -1;
-                }
+                leftList.SelectedIndex = leftListGroup[leftTabControl.SelectedIndex].Count > 0 ? 0 : -1;
             }
         }
 
-        private void LoadRightPacks(string filePath)
+        private void LoadRightPacks(string filePath, bool resetIndex)
         {
             string[] folderNames = new string[3];
             if (isRightComMojang)
@@ -710,171 +711,18 @@ namespace Craft2Git
             }
 
             #endregion
-        }
 
-        private void LeftText_TextChanged(object sender, TextChangedEventArgs e)
-        {
-            leftFilePath = leftText.Text;
-            LoadLeftPacks(leftFilePath);
-            if (leftWatcher != null)
+            if (resetIndex && rightList.SelectedIndex > -1)
             {
-                if (Directory.Exists(leftFilePath) && leftFilePath != "")
-                {
-                    leftWatcher.Path = leftFilePath;
-                }
-                
+                rightList.SelectedIndex = rightListGroup[rightTabControl.SelectedIndex].Count > 0 ? 0 : -1;
             }
-        }
-
-        private void RightText_TextChanged(object sender, TextChangedEventArgs e)
-        {
-            rightFilePath = rightText.Text;
-            LoadRightPacks(rightFilePath);
-            if (rightWatcher != null)
-            {
-                if (Directory.Exists(rightFilePath) && rightFilePath != "")
-                {
-                    rightWatcher.Path = rightFilePath;
-                }
-            }
-        }
-
-        private void LeftTabChanged(object sender, RoutedEventArgs e)
-        {
-
-            if (leftBehaviorTab.IsSelected)
-            {
-                leftTabSelected = 0;
-                rightTabSelected = 0;
-                rightTabControl.SelectedIndex = 0;
-            }
-            else if (leftResourceTab.IsSelected)
-            {
-                leftTabSelected = 1;
-                rightTabSelected = 1;
-                rightTabControl.SelectedIndex = 1;
-            }
-            else if (leftWorldTab.IsSelected)
-            {
-                leftTabSelected = 2;
-                rightTabSelected = 2;
-                rightTabControl.SelectedIndex = 2;
-            }
-            else if (leftUncatTab.IsSelected)
-            {
-                leftTabSelected = 3;
-                rightTabSelected = 3;
-                rightTabControl.SelectedIndex = 3;
-            }
-            UpdateLeftFocus();
-            UpdateRightFocus();
-        }
-
-        private void RightTabChanged(object sender, RoutedEventArgs e)
-        {
-
-            if (rightBehaviorTab.IsSelected)
-            {
-                rightTabSelected = 0;
-                leftTabSelected = 0;
-                leftTabControl.SelectedIndex = 0;
-            }
-            else if (rightResourceTab.IsSelected)
-            {
-                rightTabSelected = 1;
-                leftTabSelected = 1;
-                leftTabControl.SelectedIndex = 1;
-            }
-            else if (rightWorldTab.IsSelected)
-            {
-                rightTabSelected = 2;
-                leftTabSelected = 2;
-                leftTabControl.SelectedIndex = 2;
-            }
-            else if (rightUncatTab.IsSelected)
-            {
-                rightTabSelected = 3;
-                leftTabSelected = 3;
-                leftTabControl.SelectedIndex = 3;
-            }
-            UpdateRightFocus();
-        }
-
-        private void LeftRefreshClick(object sender, RoutedEventArgs e)
-        {
-            Refresh();
-        }
-
-        private void RightRefreshClick(object sender, RoutedEventArgs e)
-        {
-            Refresh();
         }
 
         private void MenuRefreshClick(object sender, RoutedEventArgs e)
         {
-            Refresh();
+            Refresh(true);
         }
 
-        private void UpdateLeftFocus()
-        {
-            switch (leftTabSelected)
-            {
-                case 0:
-                    leftList.SetBinding(System.Windows.Controls.ListBox.ItemsSourceProperty, leftBinding1);
-                    break;
-                case 1:
-                    leftList.SetBinding(System.Windows.Controls.ListBox.ItemsSourceProperty, leftBinding2);
-                    break;
-                case 2:
-                    leftList.SetBinding(System.Windows.Controls.ListBox.ItemsSourceProperty, leftBinding3);
-                    break;
-                case 3:
-                    leftList.SetBinding(System.Windows.Controls.ListBox.ItemsSourceProperty, leftBinding4);
-                    break;
-                default:
-                    leftList.SetBinding(System.Windows.Controls.ListBox.ItemsSourceProperty, leftBinding1);
-                    break;
-            }
-            if (leftListGroup[leftTabSelected].Count > 0)
-            {
-                leftList.SelectedIndex = 0;
-            }
-            else
-            {
-                leftList.SelectedIndex = -1;
-            }
-        }
-
-        private void UpdateRightFocus()
-        {
-            switch (rightTabSelected)
-            {
-                case 0:
-                    rightList.SetBinding(System.Windows.Controls.ListBox.ItemsSourceProperty, rightBinding1);
-                    break;
-                case 1:
-                    rightList.SetBinding(System.Windows.Controls.ListBox.ItemsSourceProperty, rightBinding2);
-                    break;
-                case 2:
-                    rightList.SetBinding(System.Windows.Controls.ListBox.ItemsSourceProperty, rightBinding3);
-                    break;
-                case 3:
-                    rightList.SetBinding(System.Windows.Controls.ListBox.ItemsSourceProperty, rightBinding4);
-                    break;
-                default:
-                    rightList.SetBinding(System.Windows.Controls.ListBox.ItemsSourceProperty, rightBinding1);
-                    break;
-            }
-            if (rightListGroup[rightTabSelected].Count > 0)
-            {
-                rightList.SelectedIndex = 0;
-            }
-            else
-            {
-                rightList.SelectedIndex = -1;
-            }
-        }
-        
         private static void DirectoryCopy(string sourceDirName, string destDirName, bool copySubDirs)
         {
             //This function is based on an example from MSDN
@@ -907,8 +755,17 @@ namespace Craft2Git
             FileInfo[] files = sourceDir.GetFiles();
             foreach (FileInfo file in files)
             {
-                string temppath = System.IO.Path.Combine(destDirName, file.Name);
-                file.CopyTo(temppath, false);
+                try
+                {
+                    string temppath = System.IO.Path.Combine(destDirName, file.Name);
+                    file.CopyTo(temppath, false);
+                }
+                catch (PathTooLongException)
+                {
+                    System.Windows.MessageBox.Show("PathTooLongException");
+                    throw;
+                }
+                
             }
 
             // If copying subdirectories, copy them and their contents to new location.
@@ -932,7 +789,7 @@ namespace Craft2Git
             { 
                 leftFilePath = dialog.SelectedPath;
                 leftText.Text = leftFilePath;
-                LoadLeftPacks(leftFilePath);
+                LoadLeftPacks(leftFilePath, true);
             }
         }
 
@@ -945,96 +802,14 @@ namespace Craft2Git
             {
                 rightFilePath = dialog.SelectedPath;
                 rightText.Text = rightFilePath;
-                LoadRightPacks(rightFilePath);
+                LoadRightPacks(rightFilePath, true);
             }
         }
 
-        private void Refresh()
+        private void Refresh(bool resetIndex)
         {
-            LoadLeftPacks(leftFilePath);
-            //leftList.SelectedIndex = 0;
-            LoadRightPacks(rightFilePath);
-            //leftList.SelectedIndex = 0;
-        }
-
-        private void LeftDeleteClick(object sender, RoutedEventArgs e)
-        {
-            if (leftList.SelectedIndex > -1)
-            {
-                string filePath = System.IO.Path.GetDirectoryName(leftListGroup[leftTabSelected][leftList.SelectedIndex].filePath);
-                int storedIndex = leftList.SelectedIndex;
-
-                DirectoryInfo dir = new DirectoryInfo(filePath);
-                if (!dir.Exists)
-                {
-                    return;
-                    throw new DirectoryNotFoundException(
-                        "Source directory does not exist or could not be found: "
-                        + filePath);
-                }
-
-                if (dir.Exists)
-                {
-                    MessageBoxResult messageBoxResult = System.Windows.MessageBox.Show("Are you sure?", "Delete Confirmation", System.Windows.MessageBoxButton.YesNo);
-                    if (messageBoxResult == MessageBoxResult.Yes)
-                    {
-                        leftWatcher.EnableRaisingEvents = false;
-                        Directory.Delete(filePath, true);  
-                        LoadLeftPacks(leftFilePath);
-                        leftWatcher.EnableRaisingEvents = true;
-                    }
-
-                    
-                }
-                if (leftListGroup[leftTabSelected].Count() - 1 >= storedIndex)
-                {
-                    leftList.SelectedIndex = storedIndex;
-                }
-                else if (leftListGroup[leftTabSelected].Count() - 1 < storedIndex)
-                {
-                    leftList.SelectedIndex = storedIndex - 1;
-                }
-                Console.WriteLine(leftList.SelectedIndex);
-            }
-        }
-
-        private void RightDeleteClick(object sender, RoutedEventArgs e)
-        {
-            if (rightList.SelectedIndex > -1)
-            {
-                string filePath = System.IO.Path.GetDirectoryName(rightListGroup[rightTabSelected][rightList.SelectedIndex].filePath);
-                int storedIndex = rightList.SelectedIndex;
-
-                DirectoryInfo dir = new DirectoryInfo(filePath);
-                if (!dir.Exists)
-                {
-                    return;
-                    throw new DirectoryNotFoundException(
-                        "Source directory does not exist or could not be found: "
-                        + filePath);
-                }
-
-                if (dir.Exists)
-                {
-                    MessageBoxResult messageBoxResult = System.Windows.MessageBox.Show("Are you sure?", "Delete Confirmation", System.Windows.MessageBoxButton.YesNo);
-                    if (messageBoxResult == MessageBoxResult.Yes)
-                    {
-                        rightWatcher.EnableRaisingEvents = false;
-                        Directory.Delete(filePath, true);
-                        LoadRightPacks(rightFilePath);
-                        rightWatcher.EnableRaisingEvents = true;
-                    }
-                }
-
-                if (rightListGroup[rightTabSelected].Count() - 1 >= storedIndex)
-                {
-                    rightList.SelectedIndex = storedIndex;
-                }
-                else if (rightListGroup[rightTabSelected].Count() - 1 < storedIndex)
-                {
-                    rightList.SelectedIndex = storedIndex - 1;
-                }
-            }
+            LoadLeftPacks(leftFilePath, resetIndex);
+            LoadRightPacks(rightFilePath, resetIndex);
         }
 
         private void SetLeftDefault(object sender, RoutedEventArgs e)
@@ -1059,7 +834,7 @@ namespace Craft2Git
             {
                 isRightComMojang = ((System.Windows.Controls.MenuItem)sender).IsChecked;
             }
-            Refresh();
+            Refresh(true);
         }
 
         private void OnLeftDirectoryChange(object source, FileSystemEventArgs e)
@@ -1067,7 +842,7 @@ namespace Craft2Git
             Console.WriteLine($"File: {e.FullPath} {e.ChangeType}");
             App.Current.Dispatcher.Invoke((Action)delegate
             {
-                LoadLeftPacks(leftFilePath);
+                LoadLeftPacks(leftFilePath, true);
             });
         }
 
@@ -1076,7 +851,7 @@ namespace Craft2Git
             Console.WriteLine($"File: {e.FullPath} {e.ChangeType}");
             App.Current.Dispatcher.Invoke((Action)delegate
             {
-                LoadRightPacks(rightFilePath);
+                LoadRightPacks(rightFilePath, true);
             });
         }
 
@@ -1086,5 +861,171 @@ namespace Craft2Git
             File.WriteAllLines(@"settings.txt", contents);
         }
 
+        #region Command definitions
+        private void TabChangedCmdExecuted(object sender, ExecutedRoutedEventArgs e)
+        {
+            if (ignoreNextTabChange) //This disgusting bit of code is to prevent an infinite loop of the left and right tabs affecting each othger due to wpf weirdness.
+            {
+                ignoreNextTabChange = false;
+                return;
+            }
+            else
+            {
+                ignoreNextTabChange = true;
+            }
+            Console.WriteLine("Tab Changed");
+            if ((int)e.Parameter >= 0 && (int)e.Parameter <= 4)
+            {
+                ChangePackTypeFocus((int)e.Parameter);
+                leftTabControl.SelectedIndex = (int)e.Parameter;
+                rightTabControl.SelectedIndex = (int)e.Parameter;
+            }
+        }
+
+        private void DirectoryChangedCmdExecuted(object sender, ExecutedRoutedEventArgs e)
+        {
+            if ((String)e.Parameter == "left")
+            {
+                Console.WriteLine("LeftText change to:" + ((TextBox)e.Source).Text);
+                leftFilePath = leftText.Text;
+                LoadLeftPacks(leftFilePath, true);
+
+                try
+                {
+                    leftWatcher.Path = leftFilePath;
+                    if (leftWatcher.EnableRaisingEvents == false)
+                    {
+                        leftWatcher.EnableRaisingEvents = true;
+                    }
+                }
+                catch (System.ArgumentException)
+                {
+                    leftWatcher.EnableRaisingEvents = false;
+                }
+
+            }
+            else if ((String)e.Parameter == "right")
+            {
+                rightFilePath = rightText.Text;
+                LoadRightPacks(rightFilePath, true);
+
+                try
+                {
+                    rightWatcher.Path = rightFilePath;
+                    if (rightWatcher.EnableRaisingEvents == false)
+                    {
+                        rightWatcher.EnableRaisingEvents = true;
+                    }
+                }
+                catch (System.ArgumentException)
+                {
+                    rightWatcher.EnableRaisingEvents = false;
+                }
+            }
+        }
+
+        private void DeletePackCmdExecuted(object sender, ExecutedRoutedEventArgs e)
+        {
+            if ((String)e.Parameter == "left")
+            {
+                DeletePack(ref leftListGroup[leftTabControl.SelectedIndex], leftList);
+            }
+            else if ((String)e.Parameter == "right")
+            {
+                DeletePack(ref rightListGroup[rightTabControl.SelectedIndex], rightList);
+            }
+            else
+            {
+                System.Windows.MessageBox.Show("in DeletePackCmdExecuted \n Parameter: " + e.Parameter);
+            }
+        }
+
+        private void DeletePackCmdCanExecute(object sender, CanExecuteRoutedEventArgs e)
+        {
+            if ((String)e.Parameter == "left")
+            {
+                e.CanExecute = leftListGroup[leftTabControl.SelectedIndex].Count > 0 ? true : false;
+            }
+            else if ((String)e.Parameter == "right")
+            {
+                e.CanExecute = rightListGroup[rightTabControl.SelectedIndex].Count > 0 ? true : false;
+            }
+        }
+        #endregion
+
+        #region Stand-alone methods
+        private void ChangePackTypeFocus(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    leftList.SetBinding(System.Windows.Controls.ListBox.ItemsSourceProperty, leftBinding1);
+                    rightList.SetBinding(System.Windows.Controls.ListBox.ItemsSourceProperty, rightBinding1);
+                    break;
+                case 1:
+                    leftList.SetBinding(System.Windows.Controls.ListBox.ItemsSourceProperty, leftBinding2);
+                    rightList.SetBinding(System.Windows.Controls.ListBox.ItemsSourceProperty, rightBinding2);
+                    break;
+                case 2:
+                    leftList.SetBinding(System.Windows.Controls.ListBox.ItemsSourceProperty, leftBinding3);
+                    rightList.SetBinding(System.Windows.Controls.ListBox.ItemsSourceProperty, rightBinding3);
+                    break;
+                case 3:
+                    leftList.SetBinding(System.Windows.Controls.ListBox.ItemsSourceProperty, leftBinding4);
+                    rightList.SetBinding(System.Windows.Controls.ListBox.ItemsSourceProperty, rightBinding4);
+                    break;
+                default:
+                    leftList.SetBinding(System.Windows.Controls.ListBox.ItemsSourceProperty, leftBinding1);
+                    rightList.SetBinding(System.Windows.Controls.ListBox.ItemsSourceProperty, rightBinding1);
+                    break;
+            }
+
+            leftList.SelectedIndex = leftListGroup[leftTabControl.SelectedIndex].Count > 0 ? 0 : -1;
+            rightList.SelectedIndex = rightListGroup[rightTabControl.SelectedIndex].Count > 0 ? 0 : -1;
+        }
+
+        private void DeletePack(ref PackList packlist, ListBox listbox)
+        {
+            if (listbox.SelectedIndex <= -1)
+            {
+                System.Windows.MessageBox.Show("Delete index is too small");
+                return;
+            }
+
+            string filePath = System.IO.Path.GetDirectoryName(packlist[listbox.SelectedIndex].filePath);
+
+            DirectoryInfo dir = new DirectoryInfo(filePath);
+            int storedIndex = listbox.SelectedIndex;
+            if (dir.Exists)
+            {
+                MessageBoxResult messageBoxResult = System.Windows.MessageBox.Show("Are you sure?", "Delete Confirmation", System.Windows.MessageBoxButton.YesNo);
+                if (messageBoxResult == MessageBoxResult.Yes)
+                {
+
+                    leftWatcher.EnableRaisingEvents = false;
+                    rightWatcher.EnableRaisingEvents = false;
+                    Directory.Delete(filePath, true);
+                    LoadLeftPacks(leftFilePath, false);
+                    LoadRightPacks(rightFilePath, false);
+                    leftWatcher.EnableRaisingEvents = true;
+                    rightWatcher.EnableRaisingEvents = true;
+                }
+            }
+            else
+            {
+                throw new DirectoryNotFoundException(
+                        "Source directory does not exist or could not be found: "
+                        + filePath);
+            }
+            if (packlist.Count() - 1 >= storedIndex)
+            {
+                listbox.SelectedIndex = storedIndex;
+            }
+            else if (packlist.Count() - 1 < storedIndex)
+            {
+                listbox.SelectedIndex = storedIndex - 1;
+            }
+        }
+        #endregion
     }
 }
