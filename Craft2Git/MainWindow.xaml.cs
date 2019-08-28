@@ -19,7 +19,309 @@ using ListBox = System.Windows.Controls.ListBox;
 
 namespace Craft2Git
 {
-    
+    // Packhub class
+    public class PackHub
+    {
+        // Array of lists that holds the data of each pack. One for each tab of the list box
+        PackList[] packLists;
+        // Array of bindings. One for each tab of the list box
+        System.Windows.Data.Binding[] listBoxBindings;
+        string defaultFilePath, filePath;
+        int selectedTab;
+        FileSystemWatcher watcher;
+        StructureType structureType;
+
+
+        // UI objects
+        TabControl tabControl;
+        ListBox listBox;
+        Button copyButton;
+        Button deleteButton;
+        TextBox directoryTextBox;
+        Button browseButton;
+        ComboBox projectComboBox;
+        ComboBox structureComboBox;
+
+        // Properties
+        public string Filepath
+        {
+            get { return filePath; }
+            set
+            {
+                filePath = value;
+                LoadLeftPacks(filePath, true);
+                Console.WriteLine("leftFilePath changed to: " + filePath);
+                // Call OnPropertyChanged whenever the property is updated
+                OnPropertyChanged("LeftFilePath");
+            }
+        }
+
+        // Constructor
+        public PackHub(TabControl _tabControl, ListBox _listBox, Button _copyButton, Button _deleteButton, TextBox _directoryTextBox,
+                        Button _browseButton, ComboBox _projectComboBox, ComboBox _structureComboBox)
+        {
+            #region UI object assignment
+            tabControl = _tabControl;
+            copyButton = _copyButton;
+            deleteButton = _deleteButton;
+            directoryTextBox = _directoryTextBox;
+            browseButton = _browseButton;
+            projectComboBox = _projectComboBox;
+            structureComboBox = _structureComboBox;
+            #endregion
+
+            packLists = new PackList[4];
+            for (int i = 0; i < packLists.Length; i++)
+            {
+                packLists[i] = new PackList();
+                listBoxBindings[i] = new System.Windows.Data.Binding();
+                listBoxBindings[i].Source = packLists[i];
+            }
+
+            filePath = defaultFilePath;
+            directoryTextBox.Text = filePath;
+
+            
+
+            #region Setup File Watcher
+            // This region is based on an example from MSDN
+            //https://docs.microsoft.com/en-us/dotnet/api/system.io.filesystemwatcher?redirectedfrom=MSDN&view=netframework-4.7.2
+            watcher = new FileSystemWatcher();
+            if (Directory.Exists(filePath) && filePath != "")
+            {
+                watcher.Path = filePath;
+            }
+            else
+            {
+                filePath = Directory.GetCurrentDirectory();
+                watcher.Path = Directory.GetCurrentDirectory();
+            }
+
+            watcher.Filter = "*.*";
+            watcher.EnableRaisingEvents = true;
+            watcher.IncludeSubdirectories = true;
+
+            // TODO: Figure out how to either pass in an event to supply to the watcher or assign the event from outside the constructor. 
+            // Also need to see if you can pass in parameters from the watcher (eg. "left" or "right")
+            //watcher.Created += OnLeftDirectoryChange;
+            //watcher.Changed += OnLeftDirectoryChange;
+            //watcher.Renamed += OnLeftDirectoryChange;
+            //watcher.Deleted += OnLeftDirectoryChange;
+            #endregion
+        }
+
+        private void LoadLeftPacks(string filePath, bool resetIndex)
+        {
+            string[] folderNames = new string[3];
+
+            switch (structureType)
+            {
+                case StructureType.comMojang:
+
+                    
+                    folderNames[0] = comMojangStructure.BPFolder;
+                    folderNames[1] = comMojangStructure.RPFolder;
+                    folderNames[2] = comMojangStructure.worldsFolder;
+                    break;
+                case StructureType.singleRepo:
+                    folderNames[0] = repoStructure.BPFolder;
+                    folderNames[1] = repoStructure.RPFolder;
+                    folderNames[2] = repoStructure.worldsFolder;
+                    break;
+                case StructureType.solvedStructure:
+                    throw new NotImplementedException();
+                    break;
+            }
+
+
+            #region Behavior Packs
+            // Behavior pack section
+            string[] packFolders;
+            packLists[0].Clear();
+            try
+            {
+                packFolders = Directory.GetDirectories(System.IO.Path.Combine(filePath, folderNames[0]));
+
+                for (int i = 0; i < packFolders.Length; i++)
+                {
+                    string manifestFilePath = System.IO.Path.Combine(packFolders[i], "manifest.json");
+                    if (File.Exists(manifestFilePath))
+                    {
+
+                        string manifestContents = File.ReadAllText(manifestFilePath);
+                        PackEntry newEntry = Newtonsoft.Json.JsonConvert.DeserializeObject<PackEntry>(manifestContents);
+                        newEntry.filePath = manifestFilePath;
+                        newEntry.iconPath = System.IO.Path.Combine(packFolders[i], "pack_icon.png");
+                        newEntry.loadIcon();
+
+                        //Handing name/desc stored in lang files
+                        if (newEntry.header.name == "pack.name")
+                        {
+                            manifestFilePath = System.IO.Path.Combine(packFolders[i], "texts/en_US.lang");
+                            if (File.Exists(manifestFilePath))
+                            {
+                                string[] langLines = File.ReadAllLines(manifestFilePath);
+                                for (int j = 0; j < langLines.Length; j++)
+                                {
+                                    string[] stringSeparators = new string[] { "=" };
+                                    string[] splitLine = langLines[j].Split(stringSeparators, StringSplitOptions.None);
+                                    if (splitLine[0] == "pack.name" && splitLine.Length > 1)
+                                    {
+                                        newEntry.header.name = splitLine[1];
+                                    }
+                                    if (splitLine[0] == "pack.description" && splitLine.Length > 1)
+                                    {
+                                        newEntry.header.description = splitLine[1];
+                                    }
+                                }
+                            }
+
+                        }
+                        packLists[0].Add(newEntry);
+                    }
+                }
+            }
+            catch (Exception)
+            {
+
+            }
+
+            #endregion
+
+            #region Resource Packs
+            ////////////////////
+            //Resource packs////
+            ////////////////////
+            packLists[1].Clear();
+            try
+            {
+                packFolders = Directory.GetDirectories(System.IO.Path.Combine(filePath, folderNames[1]));
+
+                for (int i = 0; i < packFolders.Length; i++)
+                {
+                    string filePathAppended = System.IO.Path.Combine(packFolders[i], "manifest.json");
+                    if (File.Exists(filePathAppended))
+                    {
+
+                        string contents = File.ReadAllText(filePathAppended);
+                        PackEntry newEntry = Newtonsoft.Json.JsonConvert.DeserializeObject<PackEntry>(contents);
+                        newEntry.filePath = filePathAppended;
+
+                        newEntry.iconPath = System.IO.Path.Combine(packFolders[i], "pack_icon.png");
+
+                        newEntry.loadIcon();
+
+                        //Handing name/desc stored in lang files
+                        if (newEntry.header.name == "pack.name")
+                        {
+                            filePathAppended = System.IO.Path.Combine(packFolders[i], "texts/en_US.lang");
+                            if (File.Exists(filePathAppended))
+                            {
+                                string[] langLines = File.ReadAllLines(filePathAppended);
+                                for (int j = 0; j < langLines.Length; j++)
+                                {
+                                    string[] stringSeparators = new string[] { "=" };
+                                    string[] splitLine = langLines[j].Split(stringSeparators, StringSplitOptions.None);
+                                    if (splitLine[0] == "pack.name" && splitLine.Length > 1)
+                                    {
+                                        newEntry.header.name = splitLine[1];
+                                    }
+                                    if (splitLine[0] == "pack.description" && splitLine.Length > 1)
+                                    {
+                                        newEntry.header.description = splitLine[1];
+                                    }
+                                }
+                            }
+
+                        }
+
+                        leftListGroup[1].Add(newEntry);
+                    }
+                }
+            }
+            catch (Exception)
+            {
+            }
+
+            #endregion
+
+            #region Worlds
+            ////////////////////
+            //Worlds////////////
+            ////////////////////
+            leftListGroup[2].Clear();
+            try
+            {
+                packFolders = Directory.GetDirectories(System.IO.Path.Combine(filePath, folderNames[2]));
+
+                for (int i = 0; i < packFolders.Length; i++)
+                {
+                    string filePathAppended = System.IO.Path.Combine(packFolders[i], "levelname.txt");
+                    if (File.Exists(filePathAppended))
+                    {
+
+                        string contents = File.ReadAllText(filePathAppended);
+                        PackEntry newEntry = new PackEntry();
+                        newEntry.header.name = contents;
+                        newEntry.filePath = filePathAppended;
+
+                        newEntry.iconPath = System.IO.Path.Combine(packFolders[i], "world_icon.jpeg");
+
+                        newEntry.loadIcon();
+
+                        leftListGroup[2].Add(newEntry);
+                    }
+                }
+            }
+            catch (Exception)
+            {
+
+
+            }
+
+            #endregion
+
+            #region Uncategorized
+            ////////////////////
+            //Uncategorized/////
+            ////////////////////
+            packLists[3].Clear();
+            try
+            {
+                packFolders = Directory.GetDirectories(filePath);
+
+                for (int i = 0; i < packFolders.Length; i++)
+                {
+                    string filePathAppended = System.IO.Path.Combine(packFolders[i], "manifest.json");
+                    if (File.Exists(filePathAppended))
+                    {
+
+                        string contents = File.ReadAllText(filePathAppended);
+                        PackEntry newEntry = Newtonsoft.Json.JsonConvert.DeserializeObject<PackEntry>(contents);
+                        newEntry.filePath = filePathAppended;
+
+                        newEntry.iconPath = System.IO.Path.Combine(packFolders[i], "pack_icon.png");
+
+                        newEntry.loadIcon();
+
+                        packLists[3].Add(newEntry);
+                    }
+                }
+            }
+            catch (Exception)
+            {
+
+
+            }
+
+            #endregion
+
+            if (resetIndex && listBox.SelectedIndex > -1)
+            {
+                listBox.SelectedIndex = packLists[tabControl.SelectedIndex].Count > 0 ? 0 : -1;
+            }
+        }
+    }
 
     public class PackList : ObservableCollection<PackEntry>
     {
@@ -82,13 +384,16 @@ namespace Craft2Git
         System.Windows.Data.Binding leftBinding1, leftBinding2, leftBinding3, leftBinding4, rightBinding1, rightBinding2, rightBinding3, rightBinding4;
         FileSystemWatcher leftWatcher, rightWatcher;
         public DirectoryStructure comMojangStructure = new DirectoryStructure("development_behavior_packs", "development_resource_packs", "minecraftWorlds");
+        public DirectoryStructure ComMojangStructure
+        {
+            get { return comMojangStructure; }
+        }
         public DirectoryStructure repoStructure = new DirectoryStructure("BPs", "RPs", "Worlds");
         StructureType leftStructureType = 0;
         StructureType rightStructureType = 0;
         bool shouldMakeBackups = false;
         bool ignoreNextTabChange = false;
         #endregion
-
         #region Commands
         public static RoutedCommand DeletePackCmd = new RoutedCommand();
         public static RoutedCommand CopyPackCmd = new RoutedCommand();
@@ -99,307 +404,6 @@ namespace Craft2Git
         public static RoutedCommand SetStructureTypeCmd = new RoutedCommand();
         #endregion
         public event PropertyChangedEventHandler PropertyChanged;
-
-        // Packhub class
-        public class PackHub
-        {
-            // Array of lists that holds the data of each pack. One for each tab of the list box
-            PackList[] packLists;
-            // Array of bindings. One for each tab of the list box
-            System.Windows.Data.Binding[] listBoxBindings;
-            string defaultFilePath, filePath;
-            int selectedTab;
-            FileSystemWatcher watcher;
-            StructureType structureType;
-
-
-            // UI objects
-            TabControl tabControl;
-            ListBox listBox;
-            Button copyButton;
-            Button deleteButton;
-            TextBox directoryTextBox;
-            Button browseButton;
-            ComboBox projectComboBox;
-            ComboBox structureComboBox;
-
-            // Properties
-            public string Filepath
-            {
-                get { return filePath; }
-                set
-                {
-                    filePath = value;
-                    LoadLeftPacks(filePath, true);
-                    Console.WriteLine("leftFilePath changed to: " + filePath);
-                    // Call OnPropertyChanged whenever the property is updated
-                    OnPropertyChanged("LeftFilePath");
-                }
-            }
-
-            // Constructor
-            public PackHub(TabControl _tabControl, ListBox _listBox, Button _copyButton, Button _deleteButton, TextBox _directoryTextBox,
-                            Button _browseButton, ComboBox _projectComboBox, ComboBox _structureComboBox)
-            {
-                #region UI object assignment
-                tabControl = _tabControl;
-                copyButton = _copyButton;
-                deleteButton = _deleteButton;
-                directoryTextBox = _directoryTextBox;
-                browseButton = _browseButton;
-                projectComboBox = _projectComboBox;
-                structureComboBox = _structureComboBox;
-                #endregion
-
-                packLists = new PackList[4];
-                for (int i = 0; i < packLists.Length; i++)
-                {
-                    packLists[i] = new PackList();
-                    listBoxBindings[i] = new System.Windows.Data.Binding();
-                    listBoxBindings[i].Source = packLists[i];
-                }
-
-                filePath = defaultFilePath;
-                directoryTextBox.Text = filePath;
-
-                #region Setup File Watcher
-                // This region is based on an example from MSDN
-                //https://docs.microsoft.com/en-us/dotnet/api/system.io.filesystemwatcher?redirectedfrom=MSDN&view=netframework-4.7.2
-                watcher = new FileSystemWatcher();
-                if (Directory.Exists(filePath) && filePath != "")
-                {
-                    watcher.Path = filePath;
-                }
-                else
-                {
-                    filePath = Directory.GetCurrentDirectory();
-                    watcher.Path = Directory.GetCurrentDirectory();
-                }
-
-                watcher.Filter = "*.*";
-                watcher.EnableRaisingEvents = true;
-                watcher.IncludeSubdirectories = true;
-
-                // TODO: Figure out how to either pass in an event to supply to the watcher or assign the event from outside the constructor. 
-                // Also need to see if you can pass in parameters from the watcher (eg. "left" or "right")
-                //watcher.Created += OnLeftDirectoryChange;
-                //watcher.Changed += OnLeftDirectoryChange;
-                //watcher.Renamed += OnLeftDirectoryChange;
-                //watcher.Deleted += OnLeftDirectoryChange;
-                #endregion
-            }
-
-            private void LoadLeftPacks(string filePath, bool resetIndex)
-            {
-                string[] folderNames = new string[3];
-
-                switch (structureType)
-                {
-                    case StructureType.comMojang:
-                        
-                        folderNames[0] = comMojangStructure.BPFolder;
-                        folderNames[1] = comMojangStructure.RPFolder;
-                        folderNames[2] = comMojangStructure.worldsFolder;
-                        break;
-                    case StructureType.singleRepo:
-                        folderNames[0] = repoStructure.BPFolder;
-                        folderNames[1] = repoStructure.RPFolder;
-                        folderNames[2] = repoStructure.worldsFolder;
-                        break;
-                    case StructureType.solvedStructure:
-                        throw new NotImplementedException();
-                        break;
-                }
-
-
-                #region Behavior Packs
-                // Behavior pack section
-                string[] packFolders;
-                packLists[0].Clear();
-                try
-                {
-                    packFolders = Directory.GetDirectories(System.IO.Path.Combine(filePath, folderNames[0]));
-
-                    for (int i = 0; i < packFolders.Length; i++)
-                    {
-                        string manifestFilePath = System.IO.Path.Combine(packFolders[i], "manifest.json");
-                        if (File.Exists(manifestFilePath))
-                        {
-
-                            string manifestContents = File.ReadAllText(manifestFilePath);
-                            PackEntry newEntry = Newtonsoft.Json.JsonConvert.DeserializeObject<PackEntry>(manifestContents);
-                            newEntry.filePath = manifestFilePath;
-                            newEntry.iconPath = System.IO.Path.Combine(packFolders[i], "pack_icon.png");
-                            newEntry.loadIcon();
-
-                            //Handing name/desc stored in lang files
-                            if (newEntry.header.name == "pack.name")
-                            {
-                                manifestFilePath = System.IO.Path.Combine(packFolders[i], "texts/en_US.lang");
-                                if (File.Exists(manifestFilePath))
-                                {
-                                    string[] langLines = File.ReadAllLines(manifestFilePath);
-                                    for (int j = 0; j < langLines.Length; j++)
-                                    {
-                                        string[] stringSeparators = new string[] { "=" };
-                                        string[] splitLine = langLines[j].Split(stringSeparators, StringSplitOptions.None);
-                                        if (splitLine[0] == "pack.name" && splitLine.Length > 1)
-                                        {
-                                            newEntry.header.name = splitLine[1];
-                                        }
-                                        if (splitLine[0] == "pack.description" && splitLine.Length > 1)
-                                        {
-                                            newEntry.header.description = splitLine[1];
-                                        }
-                                    }
-                                }
-
-                            }
-                            packLists[0].Add(newEntry);
-                        }
-                    }
-                }
-                catch (Exception)
-                {
-
-                }
-
-                #endregion
-
-                #region Resource Packs
-                ////////////////////
-                //Resource packs////
-                ////////////////////
-                leftListGroup[1].Clear();
-                try
-                {
-                    packFolders = Directory.GetDirectories(System.IO.Path.Combine(filePath, folderNames[1]));
-
-                    for (int i = 0; i < packFolders.Length; i++)
-                    {
-                        string filePathAppended = System.IO.Path.Combine(packFolders[i], "manifest.json");
-                        if (File.Exists(filePathAppended))
-                        {
-
-                            string contents = File.ReadAllText(filePathAppended);
-                            PackEntry newEntry = Newtonsoft.Json.JsonConvert.DeserializeObject<PackEntry>(contents);
-                            newEntry.filePath = filePathAppended;
-
-                            newEntry.iconPath = System.IO.Path.Combine(packFolders[i], "pack_icon.png");
-
-                            newEntry.loadIcon();
-
-                            //Handing name/desc stored in lang files
-                            if (newEntry.header.name == "pack.name")
-                            {
-                                filePathAppended = System.IO.Path.Combine(packFolders[i], "texts/en_US.lang");
-                                if (File.Exists(filePathAppended))
-                                {
-                                    string[] langLines = File.ReadAllLines(filePathAppended);
-                                    for (int j = 0; j < langLines.Length; j++)
-                                    {
-                                        string[] stringSeparators = new string[] { "=" };
-                                        string[] splitLine = langLines[j].Split(stringSeparators, StringSplitOptions.None);
-                                        if (splitLine[0] == "pack.name" && splitLine.Length > 1)
-                                        {
-                                            newEntry.header.name = splitLine[1];
-                                        }
-                                        if (splitLine[0] == "pack.description" && splitLine.Length > 1)
-                                        {
-                                            newEntry.header.description = splitLine[1];
-                                        }
-                                    }
-                                }
-
-                            }
-
-                            leftListGroup[1].Add(newEntry);
-                        }
-                    }
-                }
-                catch (Exception)
-                {
-                }
-
-                #endregion
-
-                #region Worlds
-                ////////////////////
-                //Worlds////////////
-                ////////////////////
-                leftListGroup[2].Clear();
-                try
-                {
-                    packFolders = Directory.GetDirectories(System.IO.Path.Combine(filePath, folderNames[2]));
-
-                    for (int i = 0; i < packFolders.Length; i++)
-                    {
-                        string filePathAppended = System.IO.Path.Combine(packFolders[i], "levelname.txt");
-                        if (File.Exists(filePathAppended))
-                        {
-
-                            string contents = File.ReadAllText(filePathAppended);
-                            PackEntry newEntry = new PackEntry();
-                            newEntry.header.name = contents;
-                            newEntry.filePath = filePathAppended;
-
-                            newEntry.iconPath = System.IO.Path.Combine(packFolders[i], "world_icon.jpeg");
-
-                            newEntry.loadIcon();
-
-                            leftListGroup[2].Add(newEntry);
-                        }
-                    }
-                }
-                catch (Exception)
-                {
-
-
-                }
-
-                #endregion
-
-                #region Uncategorized
-                ////////////////////
-                //Uncategorized/////
-                ////////////////////
-                packLists[3].Clear();
-                try
-                {
-                    packFolders = Directory.GetDirectories(filePath);
-
-                    for (int i = 0; i < packFolders.Length; i++)
-                    {
-                        string filePathAppended = System.IO.Path.Combine(packFolders[i], "manifest.json");
-                        if (File.Exists(filePathAppended))
-                        {
-
-                            string contents = File.ReadAllText(filePathAppended);
-                            PackEntry newEntry = Newtonsoft.Json.JsonConvert.DeserializeObject<PackEntry>(contents);
-                            newEntry.filePath = filePathAppended;
-
-                            newEntry.iconPath = System.IO.Path.Combine(packFolders[i], "pack_icon.png");
-
-                            newEntry.loadIcon();
-
-                            packLists[3].Add(newEntry);
-                        }
-                    }
-                }
-                catch (Exception)
-                {
-
-
-                }
-
-                #endregion
-
-                if (resetIndex && listBox.SelectedIndex > -1)
-                {
-                    listBox.SelectedIndex = packLists[tabControl.SelectedIndex].Count > 0 ? 0 : -1;
-                }
-            }
-        }
 
         public MainWindow()
         {
@@ -427,7 +431,7 @@ namespace Craft2Git
                 }
             }
             #endregion
-
+            
             #region Left Side Init
             // Init the left side
             leftListGroup = new PackList[4];
