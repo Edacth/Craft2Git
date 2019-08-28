@@ -10,6 +10,7 @@ using System.Windows.Interactivity;
 using System.Drawing;
 using System.Diagnostics;
 using System.Security.Permissions;
+using System.ComponentModel;
 using TabControl = System.Windows.Controls.TabControl;
 using Button = System.Windows.Controls.Button;
 using TextBox = System.Windows.Controls.TextBox;
@@ -30,16 +31,28 @@ namespace Craft2Git
         StructureType structureType;
         
 
-        //UI Objects
+        //UI objects
         TabControl tabControl;
         Button copyButton;
         Button deleteButton;
         TextBox directoryBox;
         Button browseButton;
+        ComboBox projectComboBox;
         ComboBox structureComboBox;
 
-        public PackHub()
+        public PackHub(TabControl _tabControl, Button _copyButton, Button _deleteButton, TextBox _directoryBox,
+                        Button _browseButton, ComboBox _projectComboBox, ComboBox _structureComboBox)
         {
+            #region UI object assignment
+            tabControl = _tabControl;
+            copyButton = _copyButton;
+            deleteButton = _deleteButton;
+            directoryBox = _directoryBox;
+            browseButton = _browseButton;
+            projectComboBox = _projectComboBox;
+            structureComboBox = _structureComboBox;
+            #endregion
+
             packLists = new PackList[4];
             for (int i = 0; i < packLists.Length; i++)
             {
@@ -48,6 +61,34 @@ namespace Craft2Git
                 listBoxBindings[i].Source = packLists[i];
             }
 
+            filePath = defaultFilePath;
+            directoryBox.Text = filePath;
+
+            #region Setup File Watcher
+            // This region is based on an example from MSDN
+            //https://docs.microsoft.com/en-us/dotnet/api/system.io.filesystemwatcher?redirectedfrom=MSDN&view=netframework-4.7.2
+            watcher = new FileSystemWatcher();
+            if (Directory.Exists(filePath) && filePath != "")
+            {
+                watcher.Path = filePath;
+            }
+            else
+            {
+                filePath = Directory.GetCurrentDirectory();
+                watcher.Path = Directory.GetCurrentDirectory();
+            }
+
+            watcher.Filter = "*.*";
+            watcher.EnableRaisingEvents = true;
+            watcher.IncludeSubdirectories = true;
+
+            // TODO: Figure out how to either pass in an event to supply to the watcher or assign the event from outside the constructor. 
+            // Also need to see if you can pass in parameters from the watcher (eg. "left" or "right")
+            //watcher.Created += OnLeftDirectoryChange;
+            //watcher.Changed += OnLeftDirectoryChange;
+            //watcher.Renamed += OnLeftDirectoryChange;
+            //watcher.Deleted += OnLeftDirectoryChange;
+            #endregion
         }
     }
 
@@ -55,7 +96,6 @@ namespace Craft2Git
     {
         public PackList()
         {
-
         }
     }
 
@@ -92,19 +132,33 @@ namespace Craft2Git
         singleRepo = 1,
         solvedStructure = 2
     }
-    public partial class MainWindow : Window
+
+    public partial class MainWindow : Window, INotifyPropertyChanged
     {
         #region Class-wide Variables
         PackList[] leftListGroup, rightListGroup;
-        string defaultLeftFilePath = "", defaultRightFilePath = "", leftFilePath = "", rightFilePath = "";
+        string defaultLeftFilePath = "", defaultRightFilePath = "", leftFilePath = "";
+        public string LeftFilePath
+        {
+            get { return leftFilePath; }
+            set
+            {
+                leftFilePath = value;
+                Console.WriteLine("leftFilePath changed to: " + leftFilePath);
+                // Call OnPropertyChanged whenever the property is updated
+                OnPropertyChanged("LeftFilePath");
+            }
+        }
+        public string rightFilePath { get; set; }
         System.Windows.Data.Binding leftBinding1, leftBinding2, leftBinding3, leftBinding4, rightBinding1, rightBinding2, rightBinding3, rightBinding4;
         FileSystemWatcher leftWatcher, rightWatcher;
         DirectoryStructure comMojangStructure = new DirectoryStructure("development_behavior_packs", "development_resource_packs", "minecraftWorlds");
         DirectoryStructure repoStructure = new DirectoryStructure("BPs", "RPs", "Worlds");
-        bool isLeftComMojang = true;
-        bool isRightComMojang = true;
+        StructureType leftStructureType = 0;
+        StructureType rightStructureType = 0;
         bool shouldMakeBackups = false;
         bool ignoreNextTabChange = false;
+
         #endregion
 
         #region Commands
@@ -112,7 +166,12 @@ namespace Craft2Git
         public static RoutedCommand CopyPackCmd = new RoutedCommand();
         public static RoutedCommand TabChangedCmd = new RoutedCommand();
         public static RoutedCommand DirectoryChangedCmd = new RoutedCommand();
+        public static RoutedCommand OpenDialogCmd = new RoutedCommand();
+        public static RoutedCommand SetDefaultPathCmd = new RoutedCommand();
+        public static RoutedCommand SetStructureTypeCmd = new RoutedCommand();
         #endregion
+
+        public event PropertyChangedEventHandler PropertyChanged;
 
         public MainWindow()
         {
@@ -186,6 +245,7 @@ namespace Craft2Git
             #endregion
 
             InitializeComponent();
+            this.DataContext = this;
 
             leftFilePath = defaultLeftFilePath;
             rightFilePath = defaultRightFilePath;
@@ -194,8 +254,6 @@ namespace Craft2Git
 
             leftText.Text = leftFilePath;
             rightText.Text = rightFilePath;
-            //leftText.AddHandler(TextBox.TextChangedEvent, new RoutedEventHandler(LeftText_TextChanged));
-            //rightText.AddHandler(TextBox.TextChangedEvent, new RoutedEventHandler(RightText_TextChanged));
 
             Refresh(true);
 
@@ -244,8 +302,15 @@ namespace Craft2Git
             rightWatcher.Renamed += OnRightDirectoryChange;
             rightWatcher.Deleted += OnRightDirectoryChange;
             #endregion
+        }
 
-            
+        protected void OnPropertyChanged(string name)
+        {
+            PropertyChangedEventHandler handler = PropertyChanged;
+            if (handler != null)
+            {
+                handler(this, new PropertyChangedEventArgs(name));
+            }
         }
 
         private void LeftCopy(object sender, RoutedEventArgs e)
@@ -257,17 +322,22 @@ namespace Craft2Git
             }
 
             string[] destFolderNames = new string[3];
-            if (isRightComMojang)
+            switch (rightStructureType)
             {
-                destFolderNames[0] = comMojangStructure.BPFolder;
-                destFolderNames[1] = comMojangStructure.RPFolder;
-                destFolderNames[2] = comMojangStructure.worldsFolder;
-            }
-            else
-            {
-                destFolderNames[0] = repoStructure.BPFolder;
-                destFolderNames[1] = repoStructure.RPFolder;
-                destFolderNames[2] = repoStructure.worldsFolder;
+                case StructureType.comMojang:
+                    destFolderNames[0] = comMojangStructure.BPFolder;
+                    destFolderNames[1] = comMojangStructure.RPFolder;
+                    destFolderNames[2] = comMojangStructure.worldsFolder;
+                    break;
+                case StructureType.singleRepo:
+                    destFolderNames[0] = repoStructure.BPFolder;
+                    destFolderNames[1] = repoStructure.RPFolder;
+                    destFolderNames[2] = repoStructure.worldsFolder;
+                    break;
+                case StructureType.solvedStructure:
+                    // TODO
+                    throw new NotImplementedException();
+                    break;
             }
 
             string sourceFilePath = System.IO.Path.GetDirectoryName(leftListGroup[leftTabControl.SelectedIndex][leftList.SelectedIndex].filePath);
@@ -302,17 +372,21 @@ namespace Craft2Git
             }
 
             string[] destFolderNames = new string[3];
-            if (isLeftComMojang)
+            switch (leftStructureType)
             {
-                destFolderNames[0] = comMojangStructure.BPFolder;
-                destFolderNames[1] = comMojangStructure.RPFolder;
-                destFolderNames[2] = comMojangStructure.worldsFolder;
-            }
-            else
-            {
-                destFolderNames[0] = repoStructure.BPFolder;
-                destFolderNames[1] = repoStructure.RPFolder;
-                destFolderNames[2] = repoStructure.worldsFolder;
+                case StructureType.comMojang:
+                    destFolderNames[0] = comMojangStructure.BPFolder;
+                    destFolderNames[1] = comMojangStructure.RPFolder;
+                    destFolderNames[2] = comMojangStructure.worldsFolder;
+                    break;
+                case StructureType.singleRepo:
+                    destFolderNames[0] = repoStructure.BPFolder;
+                    destFolderNames[1] = repoStructure.RPFolder;
+                    destFolderNames[2] = repoStructure.worldsFolder;
+                    break;
+                case StructureType.solvedStructure:
+                    throw new NotImplementedException();
+                    break;
             }
 
             string sourceFilePath = System.IO.Path.GetDirectoryName(rightListGroup[rightTabControl.SelectedIndex][rightList.SelectedIndex].filePath);
@@ -342,29 +416,31 @@ namespace Craft2Git
         private void LoadLeftPacks(string filePath, bool resetIndex)
         {
             string[] folderNames = new string[3];
-            if (isLeftComMojang)
+
+            switch (leftStructureType)
             {
-                folderNames[0] = comMojangStructure.BPFolder;
-                folderNames[1] = comMojangStructure.RPFolder;
-                folderNames[2] = comMojangStructure.worldsFolder;
-            }
-            else
-            {
-                folderNames[0] = repoStructure.BPFolder;
-                folderNames[1] = repoStructure.RPFolder;
-                folderNames[2] = repoStructure.worldsFolder;
+                case StructureType.comMojang:
+                    folderNames[0] = comMojangStructure.BPFolder;
+                    folderNames[1] = comMojangStructure.RPFolder;
+                    folderNames[2] = comMojangStructure.worldsFolder;
+                    break;
+                case StructureType.singleRepo:
+                    folderNames[0] = repoStructure.BPFolder;
+                    folderNames[1] = repoStructure.RPFolder;
+                    folderNames[2] = repoStructure.worldsFolder;
+                    break;
+                case StructureType.solvedStructure:
+                    throw new NotImplementedException();
+                    break;
             }
 
 
             #region Behavior Packs
-            ////////////////////
-            //Behavior packs////
-            ////////////////////
+            // Behavior pack section
             string[] packFolders;
             leftListGroup[0].Clear();
             try
             {
-                /*I was HERE. I was working on directoryNames array*/
                 packFolders = Directory.GetDirectories(System.IO.Path.Combine(filePath, folderNames[0]));
 
                 for (int i = 0; i < packFolders.Length; i++)
@@ -550,17 +626,23 @@ namespace Craft2Git
         private void LoadRightPacks(string filePath, bool resetIndex)
         {
             string[] folderNames = new string[3];
-            if (isRightComMojang)
+
+            switch (rightStructureType)
             {
-                folderNames[0] = comMojangStructure.BPFolder;
-                folderNames[1] = comMojangStructure.RPFolder;
-                folderNames[2] = comMojangStructure.worldsFolder;
-            }
-            else
-            {
-                folderNames[0] = repoStructure.BPFolder;
-                folderNames[1] = repoStructure.RPFolder;
-                folderNames[2] = repoStructure.worldsFolder;
+                case StructureType.comMojang:
+                    folderNames[0] = comMojangStructure.BPFolder;
+                    folderNames[1] = comMojangStructure.RPFolder;
+                    folderNames[2] = comMojangStructure.worldsFolder;
+                    break;
+                case StructureType.singleRepo:
+                    folderNames[0] = repoStructure.BPFolder;
+                    folderNames[1] = repoStructure.RPFolder;
+                    folderNames[2] = repoStructure.worldsFolder;
+                    break;
+                case StructureType.solvedStructure:
+                    // TODO
+                    throw new NotImplementedException();
+                    break;
             }
 
             #region Behavior Packs
@@ -819,79 +901,27 @@ namespace Craft2Git
             }
         }
 
-        private void LeftOpenDialog(object sender, RoutedEventArgs e)
-        {
-            FolderBrowserDialog dialog = new FolderBrowserDialog();
-            DialogResult result = dialog.ShowDialog();
-
-            if ((int)result == 1)
-            { 
-                leftFilePath = dialog.SelectedPath;
-                leftText.Text = leftFilePath;
-                LoadLeftPacks(leftFilePath, true);
-            }
-        }
-
-        private void RightOpenDialog(object sender, RoutedEventArgs e)
-        {
-            FolderBrowserDialog dialog = new FolderBrowserDialog();
-            DialogResult result = dialog.ShowDialog();
-
-            if ((int)result == 1)
-            {
-                rightFilePath = dialog.SelectedPath;
-                rightText.Text = rightFilePath;
-                LoadRightPacks(rightFilePath, true);
-            }
-        }
-
         private void Refresh(bool resetIndex)
         {
             LoadLeftPacks(leftFilePath, resetIndex);
             LoadRightPacks(rightFilePath, resetIndex);
         }
 
-        private void SetLeftDefault(object sender, RoutedEventArgs e)
+        private void SetStructureType(PackType packType, Side side)
         {
-            defaultLeftFilePath = leftText.Text;
-            WriteSettings();
-        }
-
-        private void SetRightDefault(object sender, RoutedEventArgs e)
-        {
-            defaultRightFilePath = rightText.Text;
-            WriteSettings();
-        } 
-
-        private void EvaluateDirectoryFormats(object sender, RoutedEventArgs e)
-        {
-            if (((System.Windows.Controls.MenuItem)sender).Name == "LeftFormatMenuItem")
+            if (side.ToString() == "left")
             {
-                isLeftComMojang = ((System.Windows.Controls.MenuItem)sender).IsChecked;
+                
             }
-            else if (((System.Windows.Controls.MenuItem)sender).Name == "RightFormatMenuItem")
+            else if (side.ToString() == "right")
             {
-                isRightComMojang = ((System.Windows.Controls.MenuItem)sender).IsChecked;
+                
             }
-            Refresh(true);
         }
 
-        private void OnLeftDirectoryChange(object source, FileSystemEventArgs e)
+        private void Button_Click(object sender, RoutedEventArgs e)
         {
-            Console.WriteLine($"File: {e.FullPath} {e.ChangeType}");
-            App.Current.Dispatcher.Invoke((Action)delegate
-            {
-                LoadLeftPacks(leftFilePath, true);
-            });
-        }
-
-        private void OnRightDirectoryChange(object source, FileSystemEventArgs e)
-        {
-            Console.WriteLine($"File: {e.FullPath} {e.ChangeType}");
-            App.Current.Dispatcher.Invoke((Action)delegate
-            {
-                LoadRightPacks(rightFilePath, true);
-            });
+            Console.WriteLine(leftFilePath); 
         }
 
         private void WriteSettings()
@@ -900,7 +930,25 @@ namespace Craft2Git
             File.WriteAllLines(@"settings.txt", contents);
         }
 
+
+        private void OnLeftDirectoryChange(object source, FileSystemEventArgs e)
+        {
+            App.Current.Dispatcher.Invoke((Action)delegate
+            {
+                LoadLeftPacks(leftFilePath, true);
+            });
+        }
+
+        private void OnRightDirectoryChange(object source, FileSystemEventArgs e)
+        {
+            App.Current.Dispatcher.Invoke((Action)delegate
+            {
+                LoadRightPacks(rightFilePath, true);
+            });
+        }
+
         #region Command definitions
+        // Definitions for my command events
         private void TabChangedCmdExecuted(object sender, ExecutedRoutedEventArgs e)
         {
             if (ignoreNextTabChange) //This disgusting bit of code is to prevent an infinite loop of the left and right tabs affecting each othger due to wpf weirdness.
@@ -925,7 +973,7 @@ namespace Craft2Git
         {
             if ((String)e.Parameter == "left")
             {
-                Console.WriteLine("LeftText change to:" + ((TextBox)e.Source).Text);
+                //Console.WriteLine("LeftText change to:" + ((TextBox)e.Source).Text);
                 leftFilePath = leftText.Text;
                 LoadLeftPacks(leftFilePath, true);
 
@@ -963,6 +1011,28 @@ namespace Craft2Git
             }
         }
 
+        private void OpenDialogCmdExecuted(object sender, ExecutedRoutedEventArgs e)
+        {
+            FolderBrowserDialog dialog = new FolderBrowserDialog();
+            DialogResult result = dialog.ShowDialog();
+
+            if ((int)result == 1)
+            {
+                if ((String)e.Parameter == "left")
+                {
+                    leftFilePath = dialog.SelectedPath;
+                    leftText.Text = leftFilePath;
+                    LoadLeftPacks(leftFilePath, true);
+                }
+                else if ((String)e.Parameter == "right")
+                {
+                    rightFilePath = dialog.SelectedPath;
+                    rightText.Text = rightFilePath;
+                    LoadRightPacks(rightFilePath, true);
+                }
+            } 
+        }
+
         private void DeletePackCmdExecuted(object sender, ExecutedRoutedEventArgs e)
         {
             if ((String)e.Parameter == "left")
@@ -979,7 +1049,7 @@ namespace Craft2Git
             }
         }
 
-        private void DeletePackCmdCanExecute(object sender, CanExecuteRoutedEventArgs e)
+        private void DeletePackCmdCanExecuted(object sender, CanExecuteRoutedEventArgs e)
         {
             if ((String)e.Parameter == "left")
             {
@@ -989,6 +1059,25 @@ namespace Craft2Git
             {
                 e.CanExecute = rightListGroup[rightTabControl.SelectedIndex].Count > 0 ? true : false;
             }
+        }
+
+        private void SetDefaultPathCmdExecuted(object sender, ExecutedRoutedEventArgs e)
+        {
+            if ((String)e.Parameter == "left")
+            {
+                defaultLeftFilePath = leftText.Text;
+            }
+            else if ((String)e.Parameter == "right")
+            {
+                defaultRightFilePath = rightText.Text;
+            }
+            WriteSettings();
+        }
+
+        private void SetStructureTypeCmdExecuted(object sender, ExecutedRoutedEventArgs e)
+        {
+
+            //SetStructureType();
         }
         #endregion
 

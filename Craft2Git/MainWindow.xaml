@@ -10,13 +10,22 @@
     <Window.CommandBindings>
         <CommandBinding Command="{x:Static local:MainWindow.DeletePackCmd}"
                         Executed="DeletePackCmdExecuted"
-                        CanExecute="DeletePackCmdCanExecute"/>
+                        CanExecute="DeletePackCmdCanExecuted"/>
         <CommandBinding Command="{x:Static local:MainWindow.TabChangedCmd}"
                         Executed="TabChangedCmdExecuted"
                         />
         <CommandBinding Command="{x:Static local:MainWindow.DirectoryChangedCmd}"
                         Executed="DirectoryChangedCmdExecuted"
                         />
+        <CommandBinding  Command="{x:Static local:MainWindow.OpenDialogCmd}"
+                         Executed="OpenDialogCmdExecuted"
+                         />
+        <CommandBinding  Command="{x:Static local:MainWindow.SetDefaultPathCmd}"
+                         Executed="SetDefaultPathCmdExecuted"
+                         />
+        <CommandBinding  Command="{x:Static local:MainWindow.SetStructureTypeCmd}"
+                         Executed="SetStructureTypeCmdExecuted"
+                         />
     </Window.CommandBindings>
     <Window.Resources>
         <DataTemplate x:Key="addonEntry" >
@@ -41,14 +50,14 @@
             <ColumnDefinition Width="2*"/>
             <ColumnDefinition Width="65*"></ColumnDefinition>
         </Grid.ColumnDefinitions>
-        <Button x:Name="rightCopy" Content="Copy" Grid.Column="2" Margin="43,0,0,77" HorizontalAlignment="Left" VerticalAlignment="Bottom" Width="75" Click="RightCopy"/>
-        <TextBox x:Name="leftText" Height="23" Margin="10,0,90,15" Text="TextBox" VerticalAlignment="Bottom">
-            <i:Interaction.Triggers>
+        <Button x:Name="rightCopyButton" Content="Copy" Grid.Column="2" Margin="43,0,0,77" HorizontalAlignment="Left" VerticalAlignment="Bottom" Width="75" Click="RightCopy"/>
+        <TextBox x:Name="leftText" Height="23" Margin="10,0,90,15" Text="{Binding LeftFilePath, Mode=TwoWay}" VerticalAlignment="Bottom">
+            <!--<i:Interaction.Triggers>
                 <i:EventTrigger EventName="TextChanged">
                     <i:InvokeCommandAction Command="{x:Static local:MainWindow.DirectoryChangedCmd}" 
                                            CommandParameter="left"/>
                 </i:EventTrigger>
-            </i:Interaction.Triggers>
+            </i:Interaction.Triggers>-->
         </TextBox>
         <Button x:Name="leftCopyButton" Content="Copy" Grid.Column="0" Margin="10,0,0,77" HorizontalAlignment="Left" VerticalAlignment="Bottom" Width="75" Click="LeftCopy"/>
         <TabControl x:Name="leftTabControl" Margin="10,27,43,110" SelectedIndex="0">
@@ -127,12 +136,16 @@
         </TabControl>
         <ListBox x:Name="rightList" Margin="54,59,22,120" ItemsSource="{Binding}" ItemTemplate="{DynamicResource ResourceKey=addonEntry}" Grid.Column="2"/>
         <Grid VerticalAlignment="Stretch"  Background="#FFE5E5E5" Grid.Column="1" HorizontalAlignment="Left" Width="12"/>
-        <Button x:Name="leftOpen" Content="Browse" HorizontalAlignment="Right" Margin="0,0,10,15" VerticalAlignment="Bottom" Width="75" Click="LeftOpenDialog"/>
-        <Button x:Name="rightOpen" Content="Browse" HorizontalAlignment="Right" Margin="0,0,10,15" VerticalAlignment="Bottom" Width="75" Click="RightOpenDialog" Grid.Column="2"/>
-        <Button Content="Delete" HorizontalAlignment="Left" Margin="170,0,0,77" VerticalAlignment="Bottom" Width="75" 
+        <Button x:Name="leftOpen" Content="Browse" HorizontalAlignment="Right" Margin="0,0,10,15" VerticalAlignment="Bottom" Width="75" 
+                Command="{x:Static local:MainWindow.OpenDialogCmd}"
+                CommandParameter="left"/>
+        <Button x:Name="rightOpen" Content="Browse" HorizontalAlignment="Right" Margin="0,0,10,15" VerticalAlignment="Bottom" Width="75" Grid.Column="2"
+                Command="{x:Static local:MainWindow.OpenDialogCmd}"
+                CommandParameter="right"/>
+        <Button x:Name="leftDeleteButton" Content="Delete" HorizontalAlignment="Left" Margin="215,0,0,77" VerticalAlignment="Bottom" Width="75" 
                 Command="{x:Static local:MainWindow.DeletePackCmd}"
                 CommandParameter="left"/>
-        <Button Content="Delete" HorizontalAlignment="Left" Margin="203,0,0,77" VerticalAlignment="Bottom" Width="75" Grid.Column="2"
+        <Button x:Name="rightDeleteButton" Content="Delete" HorizontalAlignment="Left" Margin="203,0,0,77" VerticalAlignment="Bottom" Width="75" Grid.Column="2"
                 Command="{x:Static local:MainWindow.DeletePackCmd}"
                 CommandParameter="right"/>
         <Menu Height="22" VerticalAlignment="Top" Grid.ColumnSpan="3">
@@ -140,13 +153,31 @@
                 <MenuItem Header="Refresh" Click="MenuRefreshClick"/>
             </MenuItem>
             <MenuItem Header="Preferences">
-                <MenuItem Header="Set Left Path As Default" Click="SetLeftDefault"/>
-                <MenuItem Header="Set Right Path As Default" Click="SetRightDefault"/>
-                <MenuItem x:Name="LeftFormatMenuItem" Header="Use com.mojang format for left path" IsCheckable="True" IsChecked="True" Checked="EvaluateDirectoryFormats" Unchecked="EvaluateDirectoryFormats"/>
-                <MenuItem x:Name="RightFormatMenuItem" Header="Use com.mojang format for right path" IsCheckable="True" IsChecked="True" Checked="EvaluateDirectoryFormats" Unchecked="EvaluateDirectoryFormats"/>
+                <MenuItem Header="Set Left Path As Default" 
+                          Command="{x:Static local:MainWindow.SetDefaultPathCmd}"
+                          CommandParameter="left"/>
+                <MenuItem Header="Set Right Path As Default" 
+                          Command="{x:Static local:MainWindow.SetDefaultPathCmd}"
+                          CommandParameter="right"/>
             </MenuItem>
         </Menu>
-
+        <ComboBox x:Name="leftProjectCombo" HorizontalAlignment="Left" Margin="90,372,0,0" VerticalAlignment="Top" Width="120"/>
+        <ComboBox x:Name="leftStructureCombo" HorizontalAlignment="Left" Margin="10,401,0,0" VerticalAlignment="Top" Width="137" SelectedIndex="0">
+            <i:Interaction.Triggers>
+                <i:EventTrigger EventName="DataContextChanged">
+                    <i:InvokeCommandAction Command="{x:Static local:MainWindow.SetStructureTypeCmd}" 
+                                           CommandParameter="{Binding ElementName=leftStructureCombo, Path=SelectedIndex}" />
+                </i:EventTrigger>
+            </i:Interaction.Triggers>
+            <ComboBoxItem Content="Com.mojang"/>
+            <ComboBoxItem Content="Single Repository"/>
+            <ComboBoxItem Content="Multiple Repositories"/>
+        </ComboBox>
+        <Button Content="Button" Grid.Column="2" HorizontalAlignment="Left" Margin="122,403,0,0" VerticalAlignment="Top" Width="75" Click="Button_Click"/>
+        <!--<Grid>
+            <local:MyUserControl Visibility="{Binding Path=MyUserControl1Visibility, Mode=OneWay, UpdateSourceTrigger=PropertyChanged}" />
+            <local:MyUserControl Visibility="{Binding Path=MyUserControl2Visibility, Mode=OneWay, UpdateSourceTrigger=PropertyChanged}" />
+        </Grid>-->
     </Grid>
 
 
