@@ -42,6 +42,10 @@ namespace Craft2Git
         ComboBox projectComboBox;
         ComboBox structureComboBox;
 
+        // Directory Structure definitions
+        public DirectoryStructure comMojangStructure = new DirectoryStructure("development_behavior_packs", "development_resource_packs", "minecraftWorlds");
+        public DirectoryStructure repoStructure = new DirectoryStructure("BPs", "RPs", "Worlds");
+
         // Properties
         public string Filepath
         {
@@ -189,9 +193,7 @@ namespace Craft2Git
             #endregion
 
             #region Resource Packs
-            ////////////////////
-            //Resource packs////
-            ////////////////////
+            // Resource pack section
             packLists[1].Clear();
             try
             {
@@ -235,7 +237,7 @@ namespace Craft2Git
 
                         }
 
-                        leftListGroup[1].Add(newEntry);
+                        packLists[1].Add(newEntry);
                     }
                 }
             }
@@ -246,10 +248,8 @@ namespace Craft2Git
             #endregion
 
             #region Worlds
-            ////////////////////
-            //Worlds////////////
-            ////////////////////
-            leftListGroup[2].Clear();
+            // Worlds
+            packLists[2].Clear();
             try
             {
                 packFolders = Directory.GetDirectories(System.IO.Path.Combine(filePath, folderNames[2]));
@@ -269,7 +269,7 @@ namespace Craft2Git
 
                         newEntry.loadIcon();
 
-                        leftListGroup[2].Add(newEntry);
+                        packLists[2].Add(newEntry);
                     }
                 }
             }
@@ -282,9 +282,7 @@ namespace Craft2Git
             #endregion
 
             #region Uncategorized
-            ////////////////////
-            //Uncategorized/////
-            ////////////////////
+            // Uncategorized Packs Section
             packLists[3].Clear();
             try
             {
@@ -321,6 +319,16 @@ namespace Craft2Git
                 listBox.SelectedIndex = packLists[tabControl.SelectedIndex].Count > 0 ? 0 : -1;
             }
         }
+
+        protected void OnPropertyChanged(string name)
+        {
+            PropertyChangedEventHandler handler = PropertyChanged;
+            if (handler != null)
+            {
+                handler(this, new PropertyChangedEventArgs(name));
+            }
+        }
+        public event PropertyChangedEventHandler PropertyChanged;
     }
 
     public class PackList : ObservableCollection<PackEntry>
@@ -368,26 +376,10 @@ namespace Craft2Git
         #region Class-wide Variables
         PackList[] leftListGroup, rightListGroup;
         string defaultLeftFilePath = "", defaultRightFilePath = "", leftFilePath = "";
-        public string LeftFilePath
-        {
-            get { return leftFilePath; }
-            set
-            {
-                leftFilePath = value;
-                LoadLeftPacks(leftFilePath, true);
-                Console.WriteLine("leftFilePath changed to: " + leftFilePath);
-                // Call OnPropertyChanged whenever the property is updated
-                OnPropertyChanged("LeftFilePath");
-            }
-        }
         public string rightFilePath { get; set; }
         System.Windows.Data.Binding leftBinding1, leftBinding2, leftBinding3, leftBinding4, rightBinding1, rightBinding2, rightBinding3, rightBinding4;
         FileSystemWatcher leftWatcher, rightWatcher;
         public DirectoryStructure comMojangStructure = new DirectoryStructure("development_behavior_packs", "development_resource_packs", "minecraftWorlds");
-        public DirectoryStructure ComMojangStructure
-        {
-            get { return comMojangStructure; }
-        }
         public DirectoryStructure repoStructure = new DirectoryStructure("BPs", "RPs", "Worlds");
         StructureType leftStructureType = 0;
         StructureType rightStructureType = 0;
@@ -451,9 +443,7 @@ namespace Craft2Git
             #endregion
 
             #region Right Side Init
-            ////////////////////
-            //Right Side init///
-            ////////////////////
+            // Init the right side
 
             rightListGroup = new PackList[4];
             for (int i = 0; i < rightListGroup.Length; i++)
@@ -535,14 +525,7 @@ namespace Craft2Git
             #endregion
         }
 
-        protected void OnPropertyChanged(string name)
-        {
-            PropertyChangedEventHandler handler = PropertyChanged;
-            if (handler != null)
-            {
-                handler(this, new PropertyChangedEventArgs(name));
-            }
-        }
+         
 
         private void LeftCopy(object sender, RoutedEventArgs e)
         {
