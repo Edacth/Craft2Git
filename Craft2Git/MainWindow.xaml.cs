@@ -30,6 +30,7 @@ namespace Craft2Git
         int selectedTab;
         FileSystemWatcher watcher;
         StructureType structureType;
+        MainWindow mainWindow;
 
 
         // UI objects
@@ -42,10 +43,6 @@ namespace Craft2Git
         ComboBox projectComboBox;
         ComboBox structureComboBox;
 
-        // Directory Structure definitions
-        public DirectoryStructure comMojangStructure = new DirectoryStructure("development_behavior_packs", "development_resource_packs", "minecraftWorlds");
-        public DirectoryStructure repoStructure = new DirectoryStructure("BPs", "RPs", "Worlds");
-
         // Properties
         public string Filepath
         {
@@ -54,14 +51,14 @@ namespace Craft2Git
             {
                 filePath = value;
                 LoadLeftPacks(filePath, true);
-                Console.WriteLine("leftFilePath changed to: " + filePath);
+                Console.WriteLine("FilePath changed to: " + filePath);
                 // Call OnPropertyChanged whenever the property is updated
-                OnPropertyChanged("LeftFilePath");
+                OnPropertyChanged("FilePath");
             }
         }
 
         // Constructor
-        public PackHub(TabControl _tabControl, ListBox _listBox, Button _copyButton, Button _deleteButton, TextBox _directoryTextBox,
+        public PackHub(MainWindow _mainWindow, TabControl _tabControl, ListBox _listBox, Button _copyButton, Button _deleteButton, TextBox _directoryTextBox,
                         Button _browseButton, ComboBox _projectComboBox, ComboBox _structureComboBox)
         {
             #region UI object assignment
@@ -84,8 +81,8 @@ namespace Craft2Git
 
             filePath = defaultFilePath;
             directoryTextBox.Text = filePath;
+            mainWindow = _mainWindow;
 
-            
 
             #region Setup File Watcher
             // This region is based on an example from MSDN
@@ -121,16 +118,14 @@ namespace Craft2Git
             switch (structureType)
             {
                 case StructureType.comMojang:
-
-                    
-                    folderNames[0] = comMojangStructure.BPFolder;
-                    folderNames[1] = comMojangStructure.RPFolder;
-                    folderNames[2] = comMojangStructure.worldsFolder;
+                    folderNames[0] = mainWindow.ComMojangStructure.BPFolder;
+                    folderNames[1] = mainWindow.ComMojangStructure.RPFolder;
+                    folderNames[2] = mainWindow.ComMojangStructure.worldsFolder;
                     break;
                 case StructureType.singleRepo:
-                    folderNames[0] = repoStructure.BPFolder;
-                    folderNames[1] = repoStructure.RPFolder;
-                    folderNames[2] = repoStructure.worldsFolder;
+                    folderNames[0] = mainWindow.RepoStructure.BPFolder;
+                    folderNames[1] = mainWindow.RepoStructure.RPFolder;
+                    folderNames[2] = mainWindow.RepoStructure.worldsFolder;
                     break;
                 case StructureType.solvedStructure:
                     throw new NotImplementedException();
@@ -337,7 +332,6 @@ namespace Craft2Git
         {
         }
     }
-
     public class DirectoryStructure
     {
         public string BPFolder { get; set; }
@@ -356,14 +350,12 @@ namespace Craft2Git
         Left = 0,
         Right = 1
     }
-
     enum PackType
     {
         BP = 0,
         RP = 1,
         World = 2
     }
-
     enum StructureType
     {
         comMojang = 0,
@@ -379,12 +371,29 @@ namespace Craft2Git
         public string rightFilePath { get; set; }
         System.Windows.Data.Binding leftBinding1, leftBinding2, leftBinding3, leftBinding4, rightBinding1, rightBinding2, rightBinding3, rightBinding4;
         FileSystemWatcher leftWatcher, rightWatcher;
-        public DirectoryStructure comMojangStructure = new DirectoryStructure("development_behavior_packs", "development_resource_packs", "minecraftWorlds");
+        DirectoryStructure comMojangStructure = new DirectoryStructure("development_behavior_packs", "development_resource_packs", "minecraftWorlds");
         public DirectoryStructure repoStructure = new DirectoryStructure("BPs", "RPs", "Worlds");
         StructureType leftStructureType = 0;
         StructureType rightStructureType = 0;
         bool shouldMakeBackups = false;
         bool ignoreNextTabChange = false;
+        #endregion
+        #region Properties
+        public DirectoryStructure ComMojangStructure
+        {
+            get
+            {
+                return comMojangStructure;
+            }
+        }
+
+        public DirectoryStructure RepoStructure
+        {
+            get
+            {
+                return repoStructure;
+            }
+        }
         #endregion
         #region Commands
         public static RoutedCommand DeletePackCmd = new RoutedCommand();
@@ -462,7 +471,7 @@ namespace Craft2Git
             #endregion
 
             // Left PackHub
-            PackHub LeftHub = new PackHub(leftTabControl, leftList, leftCopyButton, leftDeleteButton, leftText, leftOpen, leftProjectCombo, leftStructureCombo);
+            PackHub LeftHub = new PackHub(this, leftTabControl, leftList, leftCopyButton, leftDeleteButton, leftText, leftOpen, leftProjectCombo, leftStructureCombo);
 
             InitializeComponent();
             // This DataContext assignment is used for property bindings
