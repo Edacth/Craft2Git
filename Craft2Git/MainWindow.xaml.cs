@@ -58,11 +58,12 @@ namespace Craft2Git
         }
 
         // Constructor
-        public PackHub(MainWindow _mainWindow, TabControl _tabControl, ListBox _listBox, Button _copyButton, Button _deleteButton, TextBox _directoryTextBox,
+        public PackHub(MainWindow _mainWindow, string _defaultFilePath, TabControl _tabControl, ListBox _listBox, Button _copyButton, Button _deleteButton, TextBox _directoryTextBox,
                         Button _browseButton, ComboBox _projectComboBox, ComboBox _structureComboBox)
         {
             #region UI object assignment
             tabControl = _tabControl;
+            listBox = _listBox;
             copyButton = _copyButton;
             deleteButton = _deleteButton;
             directoryTextBox = _directoryTextBox;
@@ -71,18 +72,23 @@ namespace Craft2Git
             structureComboBox = _structureComboBox;
             #endregion
 
+            listBoxBindings = new System.Windows.Data.Binding[4];
             packLists = new PackList[4];
             for (int i = 0; i < packLists.Length; i++)
             {
                 packLists[i] = new PackList();
+                //leftBinding1 = new System.Windows.Data.Binding();
                 listBoxBindings[i] = new System.Windows.Data.Binding();
+                Console.WriteLine("");
                 listBoxBindings[i].Source = packLists[i];
             }
 
+            defaultFilePath = _defaultFilePath;
             filePath = defaultFilePath;
             directoryTextBox.Text = filePath;
             mainWindow = _mainWindow;
 
+            LoadLeftPacks(filePath, true);
 
             #region Setup File Watcher
             // This region is based on an example from MSDN
@@ -315,6 +321,12 @@ namespace Craft2Git
             }
         }
 
+        public void ChangePackTypeFocus(int index)
+        {
+            listBox.SetBinding(System.Windows.Controls.ListBox.ItemsSourceProperty, listBoxBindings[index]);
+            listBox.SelectedIndex = packLists[tabControl.SelectedIndex].Count > 0 ? 0 : -1;
+        }
+
         protected void OnPropertyChanged(string name)
         {
             PropertyChangedEventHandler handler = PropertyChanged;
@@ -366,6 +378,7 @@ namespace Craft2Git
     public partial class MainWindow : Window, INotifyPropertyChanged
     {
         #region Class-wide Variables
+        PackHub[] packHubs;
         PackList[] leftListGroup, rightListGroup;
         string defaultLeftFilePath = "", defaultRightFilePath = "", leftFilePath = "";
         public string rightFilePath { get; set; }
@@ -435,20 +448,20 @@ namespace Craft2Git
             
             #region Left Side Init
             // Init the left side
-            leftListGroup = new PackList[4];
-            for (int i = 0; i < leftListGroup.Length; i++)
-            {
-                leftListGroup[i] = new PackList();
-            }
+            //leftListGroup = new PackList[4];
+            //for (int i = 0; i < leftListGroup.Length; i++)
+            //{
+            //    leftListGroup[i] = new PackList();
+            //}
 
-            leftBinding1 = new System.Windows.Data.Binding();
-            leftBinding2 = new System.Windows.Data.Binding();
-            leftBinding3 = new System.Windows.Data.Binding();
-            leftBinding4 = new System.Windows.Data.Binding();
-            leftBinding1.Source = leftListGroup[0];
-            leftBinding2.Source = leftListGroup[1];
-            leftBinding3.Source = leftListGroup[2];
-            leftBinding4.Source = leftListGroup[3];
+            //leftBinding1 = new System.Windows.Data.Binding();
+            //leftBinding2 = new System.Windows.Data.Binding();
+            //leftBinding3 = new System.Windows.Data.Binding();
+            //leftBinding4 = new System.Windows.Data.Binding();
+            //leftBinding1.Source = leftListGroup[0];
+            //leftBinding2.Source = leftListGroup[1];
+            //leftBinding3.Source = leftListGroup[2];
+            //leftBinding4.Source = leftListGroup[3];
             #endregion
 
             #region Right Side Init
@@ -470,22 +483,27 @@ namespace Craft2Git
             rightBinding4.Source = rightListGroup[3];
             #endregion
 
-            // Left PackHub
-            PackHub LeftHub = new PackHub(this, leftTabControl, leftList, leftCopyButton, leftDeleteButton, leftText, leftOpen, leftProjectCombo, leftStructureCombo);
-
             InitializeComponent();
+
+            
+
+            packHubs = new PackHub[2];
+            // Left PackHub
+            packHubs[0] = new PackHub(this, defaultLeftFilePath, leftTabControl, leftList, leftCopyButton, leftDeleteButton, leftText, leftOpen, leftProjectCombo, leftStructureCombo);
+
             // This DataContext assignment is used for property bindings
             this.DataContext = this;
 
             leftFilePath = defaultLeftFilePath;
             rightFilePath = defaultRightFilePath;
 
-            ChangePackTypeFocus(0);
+            //ChangePackTypeFocus(0);
+            packHubs[0].ChangePackTypeFocus(0);
 
             leftText.Text = leftFilePath;
             rightText.Text = rightFilePath;
 
-            Refresh(true);
+            //Refresh(true);
 
             #region Left File Watcher
             //This region is based on an example from MSDN
@@ -1274,6 +1292,9 @@ namespace Craft2Git
 
         private void DeletePackCmdCanExecuted(object sender, CanExecuteRoutedEventArgs e)
         {
+            // TODO: Rig this up to the packhub ststem
+            e.CanExecute = true;
+            return;
             if ((String)e.Parameter == "left")
             {
                 e.CanExecute = leftListGroup[leftTabControl.SelectedIndex].Count > 0 ? true : false;
