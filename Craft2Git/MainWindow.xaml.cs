@@ -19,6 +19,12 @@ using ListBox = System.Windows.Controls.ListBox;
 
 namespace Craft2Git
 {
+    public class ViewModel
+    {
+        public string Name { get; set; }
+        public PackHub LeftPackHub { get; set; }
+        public PackHub[] PackHubs { get; set; }
+    }
     // Packhub class
     public class PackHub
     {
@@ -32,19 +38,8 @@ namespace Craft2Git
         StructureType structureType;
         MainWindow mainWindow;
 
-
-        // UI objects
-        TabControl tabControl;
-        ListBox listBox;
-        Button copyButton;
-        Button deleteButton;
-        TextBox directoryTextBox;
-        Button browseButton;
-        ComboBox projectComboBox;
-        ComboBox structureComboBox;
-
         // Properties
-        public string Filepath
+        public string FilePath
         {
             get { return filePath; }
             set
@@ -58,19 +53,8 @@ namespace Craft2Git
         }
 
         // Constructor
-        public PackHub(MainWindow _mainWindow, string _defaultFilePath, TabControl _tabControl, ListBox _listBox, Button _copyButton, Button _deleteButton, TextBox _directoryTextBox,
-                        Button _browseButton, ComboBox _projectComboBox, ComboBox _structureComboBox)
+        public PackHub(MainWindow _mainWindow, string _defaultFilePath)
         {
-            #region UI object assignment
-            tabControl = _tabControl;
-            listBox = _listBox;
-            copyButton = _copyButton;
-            deleteButton = _deleteButton;
-            directoryTextBox = _directoryTextBox;
-            browseButton = _browseButton;
-            projectComboBox = _projectComboBox;
-            structureComboBox = _structureComboBox;
-            #endregion
 
             listBoxBindings = new System.Windows.Data.Binding[4];
             packLists = new PackList[4];
@@ -85,7 +69,7 @@ namespace Craft2Git
 
             defaultFilePath = _defaultFilePath;
             filePath = defaultFilePath;
-            directoryTextBox.Text = filePath;
+            //directoryTextBox.Text = filePath;
             mainWindow = _mainWindow;
 
             LoadLeftPacks(filePath, true);
@@ -315,16 +299,17 @@ namespace Craft2Git
 
             #endregion
 
-            if (resetIndex && listBox.SelectedIndex > -1)
-            {
-                listBox.SelectedIndex = packLists[tabControl.SelectedIndex].Count > 0 ? 0 : -1;
-            }
+            //if (resetIndex && listBox.SelectedIndex > -1)
+            //{
+            //    listBox.SelectedIndex = packLists[tabControl.SelectedIndex].Count > 0 ? 0 : -1;
+            //}
         }
 
         public void ChangePackTypeFocus(int index)
         {
-            listBox.SetBinding(System.Windows.Controls.ListBox.ItemsSourceProperty, listBoxBindings[index]);
-            listBox.SelectedIndex = packLists[tabControl.SelectedIndex].Count > 0 ? 0 : -1;
+            //listBox.SetBinding(System.Windows.Controls.ListBox.ItemsSourceProperty, listBoxBindings[index]);
+            //listBox.SelectedIndex = packLists[tabControl.SelectedIndex].Count > 0 ? 0 : -1;
+            
         }
 
         protected void OnPropertyChanged(string name)
@@ -337,7 +322,6 @@ namespace Craft2Git
         }
         public event PropertyChangedEventHandler PropertyChanged;
     }
-
     public class PackList : ObservableCollection<PackEntry>
     {
         public PackList()
@@ -483,16 +467,24 @@ namespace Craft2Git
             rightBinding4.Source = rightListGroup[3];
             #endregion
 
-            InitializeComponent();
+            ViewModel viewModel = new ViewModel();
+            viewModel.Name = "Wooba";
 
-            
+            this.DataContext = viewModel;
 
             packHubs = new PackHub[2];
-            // Left PackHub
-            packHubs[0] = new PackHub(this, defaultLeftFilePath, leftTabControl, leftList, leftCopyButton, leftDeleteButton, leftText, leftOpen, leftProjectCombo, leftStructureCombo);
+            packHubs[0] = new PackHub(this, defaultLeftFilePath);
 
+            viewModel.LeftPackHub = packHubs[0];
+            viewModel.PackHubs = packHubs;
+
+            InitializeComponent();
+            
+            
+            // Left PackHub
+            
             // This DataContext assignment is used for property bindings
-            this.DataContext = this;
+            //this.DataContext = this;
 
             leftFilePath = defaultLeftFilePath;
             rightFilePath = defaultRightFilePath;
@@ -500,8 +492,8 @@ namespace Craft2Git
             //ChangePackTypeFocus(0);
             packHubs[0].ChangePackTypeFocus(0);
 
-            leftText.Text = leftFilePath;
-            rightText.Text = rightFilePath;
+            //leftText.Text = leftFilePath;
+            //rightText.Text = rightFilePath;
 
             //Refresh(true);
 

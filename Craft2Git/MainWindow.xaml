@@ -66,8 +66,8 @@
         </Menu>
         <!--Add data contexts to each grid. Following this page.
         https://stackoverflow.com/questions/679933/wpf-binding-multiple-controls-to-different-datacontexts-->
-        <Grid x:Name="leftGrid" DataContext="{Binding }">
-            <TextBox x:Name="leftText" Height="23" Margin="10,0,90,15" DataContext="" Text="{Binding packHubs[0].Filepath, Mode=TwoWay}" VerticalAlignment="Bottom">
+        <Grid x:Name="leftGrid" >
+            <TextBox x:Name="leftText" Height="23" Margin="10,0,90,15" Text="{Binding Path=PackHubs[0].FilePath}" VerticalAlignment="Bottom">
                 <!--<i:Interaction.Triggers>
                 <i:EventTrigger EventName="TextChanged">
                     <i:InvokeCommandAction Command="{x:Static local:MainWindow.DirectoryChangedCmd}" 
@@ -84,7 +84,9 @@
                     </i:EventTrigger>
                 </i:Interaction.Triggers>
                 <TabItem x:Name="leftBehaviorTab" Header="Behavior">
-                    <Grid Background="#FFE5E5E5"/>
+                    <Grid Background="#FFE5E5E5">
+                        <ListBox x:Name="leftList" Margin="5" ItemsSource="{Binding}" ItemTemplate="{DynamicResource ResourceKey=addonEntry}"/>
+                    </Grid>
                 </TabItem>
                 <TabItem x:Name="leftResourceTab" Header="Resource" Height="23" VerticalAlignment="Top">
                     <Grid Background="#FFE5E5E5">
@@ -108,7 +110,6 @@
                 </TabItem>
 
             </TabControl>
-            <ListBox x:Name="leftList" Margin="22,59,54,120" ItemsSource="{Binding}" ItemTemplate="{DynamicResource ResourceKey=addonEntry}"/>
             <Button x:Name="leftOpen" Content="Browse" HorizontalAlignment="Right" Margin="0,0,10,15" VerticalAlignment="Bottom" Width="75" 
                 Command="{x:Static local:MainWindow.OpenDialogCmd}"
                 CommandParameter="left"/>
@@ -182,6 +183,7 @@
                 CommandParameter="right"/>
             <Button Content="Button" HorizontalAlignment="Left" Margin="149,406,0,0" VerticalAlignment="Top" Width="75" Click="Button_Click"/>
         </Grid>
+        <TextBlock HorizontalAlignment="Left" Margin="-139,575,0,-122" TextWrapping="Wrap" Text="TextBlock" VerticalAlignment="Top"/>
         <!--<Grid>
             <local:MyUserControl Visibility="{Binding Path=MyUserControl1Visibility, Mode=OneWay, UpdateSourceTrigger=PropertyChanged}" />
             <local:MyUserControl Visibility="{Binding Path=MyUserControl2Visibility, Mode=OneWay, UpdateSourceTrigger=PropertyChanged}" />
