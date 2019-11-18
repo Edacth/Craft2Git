@@ -50,104 +50,7 @@
             <ColumnDefinition Width="2*"/>
             <ColumnDefinition Width="65*"></ColumnDefinition>
         </Grid.ColumnDefinitions>
-        <Button x:Name="rightCopyButton" Content="Copy" Grid.Column="2" Margin="43,0,0,77" HorizontalAlignment="Left" VerticalAlignment="Bottom" Width="75" Click="RightCopy"/>
-        <TextBox x:Name="leftText" Height="23" Margin="10,0,90,15" Text="{Binding LeftFilePath, Mode=TwoWay}" VerticalAlignment="Bottom">
-            <!--<i:Interaction.Triggers>
-                <i:EventTrigger EventName="TextChanged">
-                    <i:InvokeCommandAction Command="{x:Static local:MainWindow.DirectoryChangedCmd}" 
-                                           CommandParameter="left"/>
-                </i:EventTrigger>
-            </i:Interaction.Triggers>-->
-        </TextBox>
-        <Button x:Name="leftCopyButton" Content="Copy" Grid.Column="0" Margin="10,0,0,77" HorizontalAlignment="Left" VerticalAlignment="Bottom" Width="75" Click="LeftCopy"/>
-        <TabControl x:Name="leftTabControl" Margin="10,27,43,110" SelectedIndex="0">
-            <i:Interaction.Triggers>
-                <i:EventTrigger EventName="SelectionChanged">
-                    <i:InvokeCommandAction Command="{x:Static local:MainWindow.TabChangedCmd}" 
-                                           CommandParameter="{Binding ElementName=leftTabControl, Path=SelectedIndex}"/>
-                </i:EventTrigger>
-            </i:Interaction.Triggers>
-            <TabItem x:Name="leftBehaviorTab" Header="Behavior">
-                <Grid Background="#FFE5E5E5"/>
-            </TabItem>
-            <TabItem x:Name="leftResourceTab" Header="Resource" Height="23" VerticalAlignment="Top">
-                <Grid Background="#FFE5E5E5">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="224*"/>
-                        <ColumnDefinition Width="65*"/>
-                    </Grid.ColumnDefinitions>
-                </Grid>
-            </TabItem>
-            <TabItem x:Name="leftWorldTab" Header="Worlds">
-                <Grid Background="#FFE5E5E5"/>
-            </TabItem>
-            <TabItem x:Name="leftUncatTab" Header="Uncategorized">
-                <Grid Background="#FFE5E5E5">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="173*"/>
-                        <ColumnDefinition Width="79*"/>
-                        <ColumnDefinition Width="37*"/>
-                    </Grid.ColumnDefinitions>
-                </Grid>
-            </TabItem>
-
-        </TabControl>
-        <ListBox x:Name="leftList" Margin="22,59,54,120" ItemsSource="{Binding}" ItemTemplate="{DynamicResource ResourceKey=addonEntry}">
-        </ListBox>
-        <TextBox x:Name="rightText" Height="23" Margin="10,0,90,15" Text="TextBox" Grid.Column="2" VerticalAlignment="Bottom">
-            <i:Interaction.Triggers>
-                <i:EventTrigger EventName="TextChanged">
-                    <i:InvokeCommandAction Command="{x:Static local:MainWindow.DirectoryChangedCmd}" 
-                                           CommandParameter="right"/>
-                </i:EventTrigger>
-            </i:Interaction.Triggers>
-        </TextBox>
-        <TabControl x:Name="rightTabControl" Margin="43,27,10,110" Grid.Column="2" SelectedIndex="3" >
-            <i:Interaction.Triggers>
-                <i:EventTrigger EventName="SelectionChanged">
-                    <i:InvokeCommandAction Command="{x:Static local:MainWindow.TabChangedCmd}" 
-                                           CommandParameter="{Binding ElementName=rightTabControl, Path=SelectedIndex}" />
-                </i:EventTrigger>
-            </i:Interaction.Triggers>
-            <TabItem x:Name="rightBehaviorTab" Header="Behavior">
-                <Grid Background="#FFE5E5E5" Margin="0,-1,0,1"/>
-            </TabItem>
-            <TabItem x:Name="rightResourceTab" Header="Resource" Height="23" VerticalAlignment="Top">
-                <Grid Background="#FFE5E5E5">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="224*"/>
-                        <ColumnDefinition Width="65*"/>
-                    </Grid.ColumnDefinitions>
-                </Grid>
-            </TabItem>
-            <TabItem x:Name="rightWorldTab" Header="Worlds">
-                <Grid Background="#FFE5E5E5"/>
-            </TabItem>
-            <TabItem x:Name="rightUncatTab" Header="Uncategorized">
-                <Grid Background="#FFE5E5E5">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="173*"/>
-                        <ColumnDefinition Width="79*"/>
-                        <ColumnDefinition Width="37*"/>
-                    </Grid.ColumnDefinitions>
-                </Grid>
-            </TabItem>
-
-        </TabControl>
-        <ListBox x:Name="rightList" Margin="54,59,22,120" ItemsSource="{Binding}" ItemTemplate="{DynamicResource ResourceKey=addonEntry}" Grid.Column="2"/>
         <Grid VerticalAlignment="Stretch"  Background="#FFE5E5E5" Grid.Column="1" HorizontalAlignment="Left" Width="12"/>
-        <Button x:Name="leftOpen" Content="Browse" HorizontalAlignment="Right" Margin="0,0,10,15" VerticalAlignment="Bottom" Width="75" 
-                Command="{x:Static local:MainWindow.OpenDialogCmd}"
-                CommandParameter="left"/>
-        <Button x:Name="rightOpen" Content="Browse" HorizontalAlignment="Right" Margin="0,0,10,15" VerticalAlignment="Bottom" Width="75" Grid.Column="2"
-                Command="{x:Static local:MainWindow.OpenDialogCmd}"
-                CommandParameter="right"/>
-        <Button x:Name="leftDeleteButton" Content="Delete" HorizontalAlignment="Left" Margin="215,0,0,77" VerticalAlignment="Bottom" Width="75" 
-                Command="{x:Static local:MainWindow.DeletePackCmd}"
-                CommandParameter="left"/>
-        <Button x:Name="rightDeleteButton" Content="Delete" HorizontalAlignment="Left" Margin="203,0,0,77" VerticalAlignment="Bottom" Width="75" Grid.Column="2"
-                Command="{x:Static local:MainWindow.DeletePackCmd}"
-                CommandParameter="right"/>
         <Menu Height="22" VerticalAlignment="Top" Grid.ColumnSpan="3">
             <MenuItem Header="File">
                 <MenuItem Header="Refresh" Click="MenuRefreshClick"/>
@@ -161,19 +64,126 @@
                           CommandParameter="right"/>
             </MenuItem>
         </Menu>
-        <ComboBox x:Name="leftProjectCombo" HorizontalAlignment="Left" Margin="90,372,0,0" VerticalAlignment="Top" Width="120"/>
-        <ComboBox x:Name="leftStructureCombo" HorizontalAlignment="Left" Margin="10,401,0,0" VerticalAlignment="Top" Width="137" SelectedIndex="0">
-            <i:Interaction.Triggers>
-                <i:EventTrigger EventName="DataContextChanged">
-                    <i:InvokeCommandAction Command="{x:Static local:MainWindow.SetStructureTypeCmd}" 
-                                           CommandParameter="{Binding ElementName=leftStructureCombo, Path=SelectedIndex}" />
+        <!--Add data contexts to each grid. Following this page.
+        https://stackoverflow.com/questions/679933/wpf-binding-multiple-controls-to-different-datacontexts-->
+        <Grid x:Name="leftGrid" >
+            <TextBox x:Name="leftText" Height="23" Margin="10,0,90,15" Text="{Binding Path=PackHubs[0].FilePath}" VerticalAlignment="Bottom">
+                <!--<i:Interaction.Triggers>
+                <i:EventTrigger EventName="TextChanged">
+                    <i:InvokeCommandAction Command="{x:Static local:MainWindow.DirectoryChangedCmd}" 
+                                           CommandParameter="left"/>
                 </i:EventTrigger>
-            </i:Interaction.Triggers>
-            <ComboBoxItem Content="Com.mojang"/>
-            <ComboBoxItem Content="Single Repository"/>
-            <ComboBoxItem Content="Multiple Repositories"/>
-        </ComboBox>
-        <Button Content="Button" Grid.Column="2" HorizontalAlignment="Left" Margin="122,403,0,0" VerticalAlignment="Top" Width="75" Click="Button_Click"/>
+            </i:Interaction.Triggers>-->
+            </TextBox>
+            <Button x:Name="leftCopyButton" Content="Copy" Grid.Column="0" Margin="10,0,0,77" HorizontalAlignment="Left" VerticalAlignment="Bottom" Width="75" Click="LeftCopy"/>
+            <TabControl x:Name="leftTabControl" Margin="10,27,43,110" SelectedIndex="0">
+                <i:Interaction.Triggers>
+                    <i:EventTrigger EventName="SelectionChanged">
+                        <i:InvokeCommandAction Command="{x:Static local:MainWindow.TabChangedCmd}" 
+                            CommandParameter="{Binding SelectedIndex, ElementName=leftTabControl}"/>
+                    </i:EventTrigger>
+                </i:Interaction.Triggers>
+                <TabItem x:Name="leftBehaviorTab" Header="Behavior">
+                    <Grid Background="#FFE5E5E5">
+                        <ListBox x:Name="leftList" Margin="5" ItemsSource="{Binding}" ItemTemplate="{DynamicResource ResourceKey=addonEntry}"/>
+                    </Grid>
+                </TabItem>
+                <TabItem x:Name="leftResourceTab" Header="Resource" Height="23" VerticalAlignment="Top">
+                    <Grid Background="#FFE5E5E5">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="224*"/>
+                            <ColumnDefinition Width="65*"/>
+                        </Grid.ColumnDefinitions>
+                    </Grid>
+                </TabItem>
+                <TabItem x:Name="leftWorldTab" Header="Worlds">
+                    <Grid Background="#FFE5E5E5"/>
+                </TabItem>
+                <TabItem x:Name="leftUncatTab" Header="Uncategorized">
+                    <Grid Background="#FFE5E5E5">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="173*"/>
+                            <ColumnDefinition Width="79*"/>
+                            <ColumnDefinition Width="37*"/>
+                        </Grid.ColumnDefinitions>
+                    </Grid>
+                </TabItem>
+
+            </TabControl>
+            <Button x:Name="leftOpen" Content="Browse" HorizontalAlignment="Right" Margin="0,0,10,15" VerticalAlignment="Bottom" Width="75" 
+                Command="{x:Static local:MainWindow.OpenDialogCmd}"
+                CommandParameter="left"/>
+            <Button x:Name="leftDeleteButton" Content="Delete" HorizontalAlignment="Left" Margin="215,0,0,77" VerticalAlignment="Bottom" Width="75" 
+                Command="{x:Static local:MainWindow.DeletePackCmd}"
+                CommandParameter="left"/>
+            <ComboBox x:Name="leftProjectCombo" HorizontalAlignment="Left" Margin="90,372,0,0" VerticalAlignment="Top" Width="120"/>
+            <ComboBox x:Name="leftStructureCombo" HorizontalAlignment="Left" Margin="10,401,0,0" VerticalAlignment="Top" Width="137" SelectedIndex="0">
+                <i:Interaction.Triggers>
+                    <i:EventTrigger EventName="DataContextChanged">
+                        <i:InvokeCommandAction Command="{x:Static local:MainWindow.SetStructureTypeCmd}" 
+                            CommandParameter="{Binding SelectedIndex, ElementName=leftStructureCombo}" />
+                    </i:EventTrigger>
+                </i:Interaction.Triggers>
+                <ComboBoxItem Content="Com.mojang"/>
+                <ComboBoxItem Content="Single Repository"/>
+                <ComboBoxItem Content="Multiple Repositories"/>
+            </ComboBox>
+        </Grid>
+        <Grid x:Name="rightGrid" Grid.Column="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="100*"/>
+            </Grid.ColumnDefinitions>
+            <Button x:Name="rightCopyButton" Content="Copy" Margin="10,0,0,77" HorizontalAlignment="Left" VerticalAlignment="Bottom" Width="75" Click="RightCopy"/>
+            <TextBox x:Name="rightText" Height="23" Margin="10,0,90,15" Text="TextBox" Grid.Column="1" VerticalAlignment="Bottom">
+                <i:Interaction.Triggers>
+                    <i:EventTrigger EventName="TextChanged">
+                        <i:InvokeCommandAction Command="{x:Static local:MainWindow.DirectoryChangedCmd}" 
+                            CommandParameter="right"/>
+                    </i:EventTrigger>
+                </i:Interaction.Triggers>
+            </TextBox>
+            <TabControl x:Name="rightTabControl" Margin="10,27,43,110" Grid.Column="1" SelectedIndex="3" >
+                <i:Interaction.Triggers>
+                    <i:EventTrigger EventName="SelectionChanged">
+                        <i:InvokeCommandAction Command="{x:Static local:MainWindow.TabChangedCmd}" 
+                            CommandParameter="{Binding SelectedIndex, ElementName=rightTabControl}" />
+                    </i:EventTrigger>
+                </i:Interaction.Triggers>
+                <TabItem x:Name="rightBehaviorTab" Header="Behavior">
+                    <Grid Background="#FFE5E5E5" Margin="0,-1,0,1"/>
+                </TabItem>
+                <TabItem x:Name="rightResourceTab" Header="Resource" Height="23" VerticalAlignment="Top">
+                    <Grid Background="#FFE5E5E5">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="224*"/>
+                            <ColumnDefinition Width="65*"/>
+                        </Grid.ColumnDefinitions>
+                    </Grid>
+                </TabItem>
+                <TabItem x:Name="rightWorldTab" Header="Worlds">
+                    <Grid Background="#FFE5E5E5"/>
+                </TabItem>
+                <TabItem x:Name="rightUncatTab" Header="Uncategorized">
+                    <Grid Background="#FFE5E5E5">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="173*"/>
+                            <ColumnDefinition Width="79*"/>
+                            <ColumnDefinition Width="37*"/>
+                        </Grid.ColumnDefinitions>
+                    </Grid>
+                </TabItem>
+
+            </TabControl>
+            <ListBox x:Name="rightList" Margin="22,59,54,120" ItemsSource="{Binding}" ItemTemplate="{DynamicResource ResourceKey=addonEntry}" Grid.Column="1"/>
+            <Button x:Name="rightOpen" Content="Browse" HorizontalAlignment="Right" Margin="0,0,10,15" VerticalAlignment="Bottom" Width="75" Grid.Column="1"
+                Command="{x:Static local:MainWindow.OpenDialogCmd}"
+                CommandParameter="right"/>
+            <Button x:Name="rightDeleteButton" Content="Delete" HorizontalAlignment="Left" Margin="215,0,0,77" VerticalAlignment="Bottom" Width="75" Grid.Column="1"
+                Command="{x:Static local:MainWindow.DeletePackCmd}"
+                CommandParameter="right"/>
+            <Button Content="Button" HorizontalAlignment="Left" Margin="149,406,0,0" VerticalAlignment="Top" Width="75" Click="Button_Click"/>
+        </Grid>
+        <TextBlock HorizontalAlignment="Left" Margin="-139,575,0,-122" TextWrapping="Wrap" Text="TextBlock" VerticalAlignment="Top"/>
         <!--<Grid>
             <local:MyUserControl Visibility="{Binding Path=MyUserControl1Visibility, Mode=OneWay, UpdateSourceTrigger=PropertyChanged}" />
             <local:MyUserControl Visibility="{Binding Path=MyUserControl2Visibility, Mode=OneWay, UpdateSourceTrigger=PropertyChanged}" />
