@@ -9,7 +9,7 @@ by making it easy to transfer them between a folder such as a git repository and
 
 # How to use
 
-1.Enter your version control/backup path in one textbox and the path of your game's "com.mojang" 
+1. Enter your version control/backup path in one textbox and the path of your game's "com.mojang" 
 folder into the other. If there are any valid packs in those directories, the program should 
 display them in the listboxes.
 
